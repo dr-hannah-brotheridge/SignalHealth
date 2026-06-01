@@ -1,21 +1,60 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { SYSTEM_PROMPT } from '../../../lib/prompt'
+import { createClient } from '@supabase/supabase-js'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
 })
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+)
+
 export async function POST(request) {
-  const { messages } = await request.json()
+  try {
+    const { messages, userId } = await request.json()
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1000,
-    system: SYSTEM_PROMPT,
-    messages: messages.length === 0
-      ? [{ role: 'user', content: 'Hello, I am opening the app for the first time.' }]
-      : messages
-  })
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      system: SYSTEM_PROMPT,
+      messages: messages.length === 0
+        ? [{ role: 'user', content: 'Hello, I am opening the app for the first time.' }]
+        : messages
+    })
 
-  return Response.json({ reply: response.content[0].text })
+    const reply = response.content[0].text
+    const updatedMessages = messages.length === 0
+      ? [{ role: 'assistant', content: reply }]
+      : [...messages, { role: 'assistant', content: reply }]
+
+    // Save conversation server-side
+    const { data: existing, error: fetchError } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('user_id', userId)
+      .single()
+
+    if (fetchError) console.log('Fetch error:', fetchError)
+
+    if (existing) {
+      const { error: updateError } = await supabase
+        .from('conversations')
+        .update({ messages: updatedMessages, updated_at: new Date().toISOString() })
+        .eq('user_id', userId)
+      if (updateError) console.log('Update error:', updateError)
+    } else {
+      const { error: insertError } = await supabase
+        .from('conversations')
+        .insert({ user_id: userId, messages: updatedMessages })
+      if (insertError) console.log('Insert error:', insertError)
+    }
+
+    return Response.json({ reply })
+  } catch (err) {
+    console.log('API error:', err)
+    return Response.json({ error: err.message }, { status: 500 })
+  }
+}
 }
