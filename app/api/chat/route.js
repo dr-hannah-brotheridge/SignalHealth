@@ -38,15 +38,17 @@ export async function POST(request) {
       .single()
 
     if (existing) {
-      await supabase
-        .from('conversations')
-        .update({ messages: updatedMessages, updated_at: new Date().toISOString() })
-        .eq('user_id', userId)
-    } else {
-      await supabase
-        .from('conversations')
-        .insert({ user_id: userId, messages: updatedMessages })
-    }
+  const { error: updateError } = await supabase
+    .from('conversations')
+    .update({ messages: updatedMessages, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+  console.log('Update result:', updateError ? updateError.message : 'success')
+} else {
+  const { error: insertError } = await supabase
+    .from('conversations')
+    .insert({ user_id: userId, messages: updatedMessages })
+  console.log('Insert result:', insertError ? insertError.message : 'success')
+}
 
     return Response.json({ reply })
   } catch (err) {
