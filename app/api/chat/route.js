@@ -6,15 +6,24 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
 })
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-)
-
 export async function POST(request) {
   try {
+    const authHeader = request.headers.get('Authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      }
+    )
+
     const { messages, userId } = await request.json()
-    console.log('Saving conversation for userId:', userId)
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
@@ -38,17 +47,17 @@ export async function POST(request) {
       .single()
 
     if (existing) {
-  const { error: updateError } = await supabase
-    .from('conversations')
-    .update({ messages: updatedMessages, updated_at: new Date().toISOString() })
-    .eq('user_id', userId)
-  console.log('Update result:', updateError ? updateError.message : 'success')
-} else {
-  const { error: insertError } = await supabase
-    .from('conversations')
-    .insert({ user_id: userId, messages: updatedMessages })
-  console.log('Insert result:', insertError ? insertError.message : 'success')
-}
+      const { error: updateError } = await supabase
+        .from('conversations')
+        .update({ messages: updatedMessages, updated_at: new Date().toISOString() })
+        .eq('user_id', userId)
+      console.log('Update result:', updateError ? updateError.message : 'success')
+    } else {
+      const { error: insertError } = await supabase
+        .from('conversations')
+        .insert({ user_id: userId, messages: updatedMessages })
+      console.log('Insert result:', insertError ? insertError.message : 'success')
+    }
 
     return Response.json({ reply })
   } catch (err) {
