@@ -25,30 +25,26 @@ export async function POST(request) {
     })
 
     const reply = response.content[0].text
+
     const updatedMessages = messages.length === 0
       ? [{ role: 'assistant', content: reply }]
       : [...messages, { role: 'assistant', content: reply }]
 
-    // Save conversation server-side
-    const { data: existing, error: fetchError } = await supabase
+    const { data: existing } = await supabase
       .from('conversations')
       .select('id')
       .eq('user_id', userId)
       .single()
 
-    if (fetchError) console.log('Fetch error:', fetchError)
-
     if (existing) {
-      const { error: updateError } = await supabase
+      await supabase
         .from('conversations')
         .update({ messages: updatedMessages, updated_at: new Date().toISOString() })
         .eq('user_id', userId)
-      if (updateError) console.log('Update error:', updateError)
     } else {
-      const { error: insertError } = await supabase
+      await supabase
         .from('conversations')
         .insert({ user_id: userId, messages: updatedMessages })
-      if (insertError) console.log('Insert error:', insertError)
     }
 
     return Response.json({ reply })
@@ -56,5 +52,4 @@ export async function POST(request) {
     console.log('API error:', err)
     return Response.json({ error: err.message }, { status: 500 })
   }
-}
 }
