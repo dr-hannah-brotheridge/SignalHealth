@@ -14,6 +14,7 @@ const supabase = createClient(
 export async function POST(request) {
   try {
     const { messages, userId } = await request.json()
+    console.log('Saving conversation for userId:', userId)
 
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
