@@ -124,7 +124,7 @@ export default function ChatPage() {
                 ? 'bg-emerald-500 text-white rounded-br-sm'
                 : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'
             }`}>
-              {msg.content}
+              {msg.content.replace(/\*\*(.*?)\*\*/g, '$1')}
             </div>
           </div>
         ))}
