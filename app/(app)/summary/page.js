@@ -67,7 +67,8 @@ export default function SummaryPage() {
           <button
             onClick={generateSummary}
             disabled={loading || !profile}
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl py-4 text-base font-semibold disabled:opacity-50 transition-colors">
+            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl py-4 text-base font-semibold disabled:opacity-50 transition-colors"
+          >
             {loading ? 'Generating your summary...' : 'Generate GP Summary'}
           </button>
         )}
@@ -80,13 +81,15 @@ export default function SummaryPage() {
             </div>
             <button
               onClick={() => { navigator.clipboard.writeText(summary); alert('Copied to clipboard!') }}
-              className="w-full border border-emerald-500 text-emerald-600 rounded-2xl py-3 text-base font-medium hover:bg-emerald-50 transition-colors">
+              className="w-full border border-emerald-500 text-emerald-600 rounded-2xl py-3 text-base font-medium hover:bg-emerald-50 transition-colors"
+            >
               Copy to clipboard
             </button>
             <button
-              onClick={() => { setGenerated(false); setSummary('') }}
-              className="w-full border border-gray-200 text-gray-500 rounded-2xl py-3 text-base font-medium hover:bg-gray-50 transition-colors">
-              Update
+              onClick={generateSummary}
+              className="w-full border border-gray-200 text-gray-500 rounded-2xl py-3 text-base font-medium hover:bg-gray-50 transition-colors"
+            >
+              Update Summary
             </button>
           </div>
         )}
