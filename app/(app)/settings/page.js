@@ -30,11 +30,11 @@ export default function SettingsPage() {
   const modalContent = {
     about: {
       title: "About SignalHealth",
-      text: `SignalHealth is a proactive AI health companion built by Hannah Brotheridge.
+      text: `SignalHealth is an AI health companion that checks in with users over time, builds their health story, spots patterns, and helps them prepare for better conversations with clinicians.
 
-The app regularly checks in with users to understand how they are feeling, tracks ongoing health trends, builds a personalized health profile, and helps organize information into a clear summary for General Practitioner (GP) appointments.
-
-Designed intentionally for elderly accessibility, SignalHealth balances high-contrast layouts, clean mobile interfaces, and supportive technology to ensure your vital health observations are never missed or forgotten during brief doctor consultations.`
+Instead of waiting for users to ask medical questions, it regularly checks in with them, builds a personalised health profile, and asks targeted questions based on their age, background, medical history, symptoms, and risk factors.
+Over time, it helps identify patterns that may otherwise be missed, such as persistent fatigue, sleep issues, pain, medication changes, cognitive changes, or symptoms worth discussing with a GP. 
+It does not replace medical care or diagnose conditions. Its role is to help users notice changes earlier, understand what information may be important, and prepare a clear summary to take to healthcare appointments.`
     },
     disclaimer: {
       title: "Medical Disclaimer",
