@@ -23,10 +23,14 @@ export default function SummaryPage() {
         .eq('id', user.id)
         .single()
       setProfile(data)
+      if (data?.gp_summary) {
+        setSummary(data.gp_summary)
+        setGenerated(true)
+      }
     }
     getProfile()
   }, [])
-
+  
   const generateSummary = async () => {
     setLoading(true)
     const { data: { session } } = await supabase.auth.getSession()
