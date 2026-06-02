@@ -30,7 +30,7 @@ export default function SummaryPage() {
     }
     getProfile()
   }, [])
-  
+
   const generateSummary = async () => {
     setLoading(true)
     const { data: { session } } = await supabase.auth.getSession()
@@ -86,7 +86,7 @@ export default function SummaryPage() {
             <button
               onClick={() => { setGenerated(false); setSummary('') }}
               className="w-full border border-gray-200 text-gray-500 rounded-2xl py-3 text-base font-medium hover:bg-gray-50 transition-colors">
-              Regenerate
+              Update
             </button>
           </div>
         )}
