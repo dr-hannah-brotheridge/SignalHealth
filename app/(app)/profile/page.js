@@ -52,6 +52,17 @@ export default function ProfilePage() {
 
       <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full">
 
+        {/* Helpful Tip Banner for changing profile data */}
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start space-x-3 shadow-sm">
+          <span className="text-xl mt-0.5">💡</span>
+          <div>
+            <h3 className="text-sm font-semibold text-amber-900">Need to make adjustments?</h3>
+            <p className="text-sm text-amber-800 mt-0.5 leading-relaxed">
+              To alter your profile, just let me know in that chat!
+            </p>
+          </div>
+        </div>
+
         {/* Health Summary */}
         {profile?.health_summary && (
           <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
