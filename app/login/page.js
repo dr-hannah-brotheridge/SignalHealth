@@ -5,11 +5,13 @@ import { supabase } from '../../lib/supabase'
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isSignUp, setIsSignUp] = useState(false)
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [authMode, setAuthMode] = useState('signin') // 'signin', 'signup', or 'forgot'
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [isError, setIsError] = useState(false)
 
-  // Automatically redirect users to the chat if they are already signed in
   useEffect(() => {
     const checkUserSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -20,7 +22,6 @@ export default function LoginPage() {
     
     checkUserSession()
 
-    // Also listen for any automatic background login state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         window.location.href = '/chat'
@@ -30,20 +31,54 @@ export default function LoginPage() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleAuth = async () => {
-    setLoading(true)
+  const handleAuth = async (e) => {
+    if (e) e.preventDefault()
     setMessage('')
+    setIsError(false)
+    
+    // 1. FORGOT PASSWORD FLOW
+    if (authMode === 'forgot') {
+      if (!email) {
+        setIsError(true)
+        setMessage('Please enter your email address.')
+        return
+      }
+      setLoading(true)
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/settings`, 
+      })
+      if (error) {
+        setIsError(true)
+        setMessage(error.message)
+      } else {
+        setMessage('Password reset email sent! Check your inbox.')
+      }
+      setLoading(false)
+      return
+    }
 
-    if (isSignUp) {
+    // 2. SIGN UP FLOW (With Password Match Check)
+    if (authMode === 'signup' && password !== confirmPassword) {
+      setIsError(true)
+      setMessage("Passwords do not match.")
+      return
+    }
+
+    setLoading(true)
+
+    if (authMode === 'signup') {
       const { error } = await supabase.auth.signUp({ email, password })
       if (error) {
+        setIsError(true)
         setMessage(error.message)
       } else {
         setMessage('Check your email to confirm your account!')
       }
     } else {
+      // 3. SIGN IN FLOW
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
+        setIsError(true)
         setMessage(error.message)
       } else {
         window.location.href = '/chat'
@@ -57,8 +92,6 @@ export default function LoginPage() {
       
       {/* 1. Hero Section */}
       <div className="px-6 pt-12 pb-14 bg-emerald-50 text-center border-b border-emerald-100/30">
-        
-        {/* Prominent Brand Logo Header */}
         <div className="flex items-center justify-center gap-2.5 mb-8">
           <div className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center shadow-sm">
             <span className="text-white text-base font-bold">♥</span>
@@ -127,7 +160,7 @@ export default function LoginPage() {
           </div>
         </section>
 
-        {/* 5. Clean, Integrated Login/Signup Box */}
+        {/* 5. Clean, Integrated Auth Box */}
         <section id="auth-box" className="pt-12 border-t border-gray-100">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-md mx-auto">
             <div className="flex items-center gap-3 mb-6">
@@ -141,47 +174,118 @@ export default function LoginPage() {
             </div>
 
             <h4 className="text-lg font-medium text-gray-900 mb-6">
-              {isSignUp ? 'Create your account' : 'Welcome back'}
+              {authMode === 'signup' && 'Create your account'}
+              {authMode === 'signin' && 'Welcome back'}
+              {authMode === 'forgot' && 'Reset your password'}
             </h4>
 
-            <div className="space-y-4">
+            <form onSubmit={handleAuth} className="space-y-4">
+              {/* Email Address Input */}
               <input
                 type="email"
                 placeholder="Email address"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
+                required
                 className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-base outline-none focus:border-emerald-500 transition-colors"
               />
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-base outline-none focus:border-emerald-500 transition-colors"
-              />
+              
+              {/* Password Inputs (Hidden in Forgot Password Mode) */}
+              {authMode !== 'forgot' && (
+                <>
+                  {/* Main Password Input with Toggle */}
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Password"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      required
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3.5 pr-12 text-base outline-none focus:border-emerald-500 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none select-none"
+                    >
+                      {showPassword ? '🙈' : '👁️'}
+                    </button>
+                  </div>
 
-              {message && (
-                <p className="text-sm font-medium text-emerald-600 bg-emerald-50 p-3 rounded-xl border border-emerald-100">{message}</p>
+                  {/* Repeat Password Input (Sign Up Only) */}
+                  {authMode === 'signup' && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Repeat password"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        required
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-base outline-none focus:border-emerald-500 transition-colors"
+                      />
+                    </div>
+                  )}
+
+                  {/* Forgot Password Link Button (Sign In Only) */}
+                  {authMode === 'signin' && (
+                    <div className="text-right pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => { setAuthMode('forgot'); setMessage(''); }}
+                        className="text-xs font-medium text-emerald-600 hover:underline focus:outline-none"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
 
+              {/* Dynamic Status Notification Alert Box */}
+              {message && (
+                <p className={`text-sm font-medium p-3 rounded-xl border animate-in fade-in duration-200 ${
+                  isError 
+                  ? 'text-red-600 bg-red-50 border-red-100' 
+                  : 'text-emerald-600 bg-emerald-50 border-emerald-100'
+                }`}>
+                  {isError ? '⚠️ ' : ''}{message}
+                </p>
+              )}
+
+              {/* Action Submit Button */}
               <button
-                onClick={handleAuth}
+                type="submit"
                 disabled={loading}
                 className="w-full bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-3.5 text-base font-semibold transition-colors disabled:opacity-50 shadow-sm"
               >
-                {loading ? 'Please wait...' : isSignUp ? 'Create account' : 'Sign in'}
+                {loading ? 'Please wait...' : authMode === 'signup' ? 'Create account' : authMode === 'forgot' ? 'Send recovery link' : 'Sign in'}
               </button>
-            </div>
+            </form>
 
-            <p className="text-sm text-gray-500 text-center mt-6">
-              {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-              <button
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-emerald-600 ml-1 font-medium hover:underline focus:outline-none"
-              >
-                {isSignUp ? 'Sign in' : 'Sign up'}
-              </button>
-            </p>
+            {/* Bottom Form Switching Links Footer */}
+            <div className="text-sm text-gray-500 text-center mt-6 space-y-2">
+              {authMode === 'forgot' ? (
+                <button
+                  onClick={() => { setAuthMode('signin'); setMessage(''); }}
+                  className="text-emerald-600 font-medium hover:underline focus:outline-none block mx-auto"
+                >
+                  Back to Sign In
+                </button>
+              ) : (
+                <p>
+                  {authMode === 'signup' ? 'Already have an account?' : "Don't have an account?"}
+                  <button
+                    onClick={() => {
+                      setAuthMode(authMode === 'signup' ? 'signin' : 'signup');
+                      setMessage('');
+                    }}
+                    className="text-emerald-600 ml-1 font-medium hover:underline focus:outline-none"
+                  >
+                    {authMode === 'signup' ? 'Sign in' : 'Sign up'}
+                  </button>
+                </p>
+              )}
+            </div>
           </div>
         </section>
 

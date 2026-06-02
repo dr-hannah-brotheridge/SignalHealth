@@ -5,23 +5,56 @@ import { supabase } from '../../../lib/supabase'
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [isError, setIsError] = useState(false)
   
-  // State to manage which modal is currently open
+  // Controls the legal text pop-up modals
   const [activeModal, setActiveModal] = useState(null)
+
+  // Controls the password updating interface block
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     window.location.href = '/login'
   }
 
-  const handleChangePassword = async () => {
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault()
     setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email)
+    setMessage('')
+    setIsError(false)
+
+    // Form matching validation check
+    if (newPassword !== confirmPassword) {
+      setIsError(true)
+      setMessage('Passwords do not match.')
+      setLoading(false)
+      return
+    }
+
+    if (newPassword.length < 6) {
+      setIsError(true)
+      setMessage('Password must be at least 6 characters.')
+      setLoading(false)
+      return
+    }
+
+    // Direct update call to Supabase Auth engine
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    })
+
     if (error) {
-      setMessage('Something went wrong. Please try again.')
+      setIsError(true)
+      setMessage(error.message)
     } else {
-      setMessage('Password reset email sent! Check your inbox.')
+      setMessage('Password updated successfully!')
+      setNewPassword('')
+      setConfirmPassword('')
+      setIsChangingPassword(false)
     }
     setLoading(false)
   }
@@ -129,26 +162,96 @@ We reserve the right to modify these terms at any time. Continued use of the app
 
       <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full">
 
+        {/* Account Controls Card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/30">
             <h2 className="text-base font-semibold text-gray-800">Account</h2>
           </div>
-          <button onClick={handleChangePassword} disabled={loading} className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors group">
+          
+          {/* Change Password Menu Trigger */}
+          <button 
+            onClick={() => {
+              setIsChangingPassword(!isChangingPassword);
+              setMessage('');
+            }} 
+            className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors group"
+          >
             <span className="text-base text-gray-700">Change Password</span>
-            <span className="text-gray-300 group-hover:text-gray-400 transition-colors">›</span>
+            <span className={`text-gray-300 group-hover:text-gray-400 transition-transform duration-200 ${isChangingPassword ? 'rotate-90' : ''}`}>›</span>
           </button>
+
+          {/* Secure Interactive New Password Form Block */}
+          {isChangingPassword && (
+            <form onSubmit={handleUpdatePassword} className="p-4 bg-gray-50/50 border-b border-gray-50 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  required
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-sm bg-white outline-none focus:border-emerald-500 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-base text-gray-400 hover:text-gray-600 focus:outline-none select-none"
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Repeat new password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                required
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white outline-none focus:border-emerald-500 transition-colors"
+              />
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl py-2.5 transition-colors disabled:opacity-50 shadow-sm"
+                >
+                  {loading ? 'Saving...' : 'Save New Password'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsChangingPassword(false);
+                    setNewPassword('');
+                    setConfirmPassword('');
+                  }}
+                  className="px-4 bg-white border border-gray-200 text-gray-500 font-medium text-sm rounded-xl py-2.5 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Logout Button */}
           <button onClick={handleLogout} className="w-full px-4 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors group">
             <span className="text-base text-red-500">Sign Out</span>
             <span className="text-gray-300 group-hover:text-gray-400 transition-colors">›</span>
           </button>
         </div>
 
+        {/* Global Operational Message Box */}
         {message && (
-          <p className="text-sm text-emerald-600 text-center font-medium bg-emerald-50 py-2.5 px-4 rounded-xl border border-emerald-100 animate-in fade-in slide-in-from-top-1">
+          <p className={`text-sm font-medium text-center py-2.5 px-4 rounded-xl border animate-in fade-in slide-in-from-top-1 ${
+            isError 
+              ? 'text-red-600 bg-red-50 border-red-100' 
+              : 'text-emerald-600 bg-emerald-50 border-emerald-100'
+          }`}>
             {message}
           </p>
         )}
 
+        {/* Application Information Cards */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/30">
             <h2 className="text-base font-semibold text-gray-800">Information</h2>
