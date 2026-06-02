@@ -87,31 +87,32 @@ export async function POST(request) {
     }
 
     // Extract and save profile data in background
-    if (updatedMessages.length > 2) {
-  extractProfile(updatedMessages).then(async (profile) => {
-    console.log('Extracted profile:', JSON.stringify(profile))
-    if (!profile) return
-        const updates = {}
-        if (profile.name) updates.name = profile.name
-        if (profile.age) updates.age = profile.age
-        if (profile.gender) updates.gender = profile.gender
-        if (profile.ethnicity) updates.ethnicity = profile.ethnicity
-        if (profile.medications) updates.medications = profile.medications
-        if (profile.known_health_problems) updates.known_health_problems = profile.known_health_problems
-        if (profile.family_history) updates.family_history = profile.family_history
-        if (profile.allergies) updates.allergies = profile.allergies
-        if (profile.alcohol_and_smoking) updates.alcohol_and_smoking = profile.alcohol_and_smoking
-        if (profile.surgeries) updates.surgeries = profile.surgeries
-        if (Object.keys(updates).length > 0) {
-          updates.last_updated = new Date().toISOString()
-          const { error: profileError } = await supabase
-  .from('profiles')
-  .update(updates)
-  .eq('id', userId)
-console.log('Profile update result:', profileError ? profileError.message : 'success')
-        }
-      })
+    // Extract and save profile data
+if (updatedMessages.length > 2) {
+  const profile = await extractProfile(updatedMessages)
+  console.log('Extracted profile:', JSON.stringify(profile))
+  if (profile) {
+    const updates = {}
+    if (profile.name) updates.name = profile.name
+    if (profile.age) updates.age = profile.age
+    if (profile.gender) updates.gender = profile.gender
+    if (profile.ethnicity) updates.ethnicity = profile.ethnicity
+    if (profile.medications) updates.medications = profile.medications
+    if (profile.known_health_problems) updates.known_health_problems = profile.known_health_problems
+    if (profile.family_history) updates.family_history = profile.family_history
+    if (profile.allergies) updates.allergies = profile.allergies
+    if (profile.alcohol_and_smoking) updates.alcohol_and_smoking = profile.alcohol_and_smoking
+    if (profile.surgeries) updates.surgeries = profile.surgeries
+    if (Object.keys(updates).length > 0) {
+      updates.last_updated = new Date().toISOString()
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId)
+      console.log('Profile update result:', profileError ? profileError.message : 'success')
     }
+  }
+}
 
     return Response.json({ reply })
   } catch (err) {
