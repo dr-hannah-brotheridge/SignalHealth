@@ -19,7 +19,11 @@ async function extractProfile(messages) {
         role: 'user',
         content: `Based on this conversation, extract any confirmed profile information and return ONLY a JSON object with these exact fields. Only include information the user has explicitly stated. Use null for anything not mentioned. Do not invent or infer anything.
 
-Fields: name, age, gender, ethnicity, medications, known_health_problems, family_history, allergies, alcohol_and_smoking, surgeries
+Fields: name, age, gender, ethnicity, medications, known_health_problems, family_history, allergies, alcohol_and_smoking, surgeries, health_summary, health_story
+
+For health_summary: write a succinct clinical summary of the person based only on confirmed onboarding details (name, age, gender, ethnicity, medications, known conditions, family history, allergies, lifestyle, surgeries). If there isn't enough information yet, use null.
+
+For health_story: write a succinct but comprehensive narrative summary covering everything discussed including symptoms, concerns, patterns, triggers, and any other health details mentioned in conversation. Update and replace this each time with the most complete picture. If there isn't enough information yet, use null.
 
 Conversation:
 ${messages.map(m => `${m.role}: ${m.content}`).join('\n')}
@@ -107,6 +111,8 @@ if (updatedMessages.length > 2) {
     if (profile.allergies) updates.allergies = profile.allergies
     if (profile.alcohol_and_smoking) updates.alcohol_and_smoking = profile.alcohol_and_smoking
     if (profile.surgeries) updates.surgeries = profile.surgeries
+    if (profile.health_summary) updates.health_summary = profile.health_summary
+    if (profile.health_story) updates.health_story = profile.health_story
     if (Object.keys(updates).length > 0) {
       updates.last_updated = new Date().toISOString()
       const { error: profileError } = await supabaseAdmin

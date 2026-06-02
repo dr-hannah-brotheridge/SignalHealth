@@ -42,11 +42,15 @@ export default function ChatPage() {
   const startConversation = async (userId) => {
   if (!userId) return
   setLoading(true)
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: [], userId })
-  })
+  const { data: { session } } = await supabase.auth.getSession()
+const res = await fetch('/api/chat', {
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${session.access_token}`
+  },
+  body: JSON.stringify({ messages: [], userId })
+})
   const data = await res.json()
   const initialMessage = { role: 'assistant', content: data.reply }
   setMessages([initialMessage])
@@ -81,11 +85,15 @@ export default function ChatPage() {
     setInput('')
     setLoading(true)
 
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: updatedMessages, userId: user.id })
-    })
+    const { data: { session } } = await supabase.auth.getSession()
+const res = await fetch('/api/chat', {
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${session.access_token}`
+  },
+  body: JSON.stringify({ messages: [], userId })
+})
     const data = await res.json()
     const assistantMessage = { role: 'assistant', content: data.reply }
     const finalMessages = [...updatedMessages, assistantMessage]
@@ -125,7 +133,9 @@ export default function ChatPage() {
                 ? 'bg-emerald-500 text-white rounded-br-sm'
                 : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'
             }`}>
-              {msg.content.replace(/\*\*(.*?)\*\*/g, '$1')}
+              {msg.content.replace(/\*\*(.*?)\*\*/g, '$1').split('\n').map((line, i) => (
+  <span key={i}>{line}<br /></span>
+))}
             </div>
           </div>
         ))}
