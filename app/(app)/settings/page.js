@@ -35,7 +35,45 @@ export default function SettingsPage() {
           <div className="px-4 py-3 border-b border-gray-50">
             <h2 className="text-base font-semibold text-gray-800">Account</h2>
           </div>
-          <button
-            onClick={handleChangePassword}
-            disabled={loading}
-           className={`w-full px-4 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors ${i !== arr.length - 1 ? 'border-b border-gray-50' : ''}`}
+          <button onClick={handleChangePassword} disabled={loading} className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors">
+            <span className="text-base text-gray-700">Change Password</span>
+            <span className="text-gray-300">›</span>
+          </button>
+          <button onClick={handleLogout} className="w-full px-4 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
+            <span className="text-base text-red-500">Sign Out</span>
+            <span className="text-gray-300">›</span>
+          </button>
+        </div>
+
+        {message && (
+          <p className="text-sm text-emerald-600 text-center">{message}</p>
+        )}
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-50">
+            <h2 className="text-base font-semibold text-gray-800">Information</h2>
+          </div>
+          <button className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors">
+            <span className="text-base text-gray-700">About SignalHealth</span>
+            <span className="text-gray-300">›</span>
+          </button>
+          <button className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors">
+            <span className="text-base text-gray-700">Medical Disclaimer</span>
+            <span className="text-gray-300">›</span>
+          </button>
+          <button className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors">
+            <span className="text-base text-gray-700">Privacy Policy</span>
+            <span className="text-gray-300">›</span>
+          </button>
+          <button className="w-full px-4 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
+            <span className="text-base text-gray-700">Terms of Service</span>
+            <span className="text-gray-300">›</span>
+          </button>
+        </div>
+
+        <p className="text-xs text-gray-400 text-center">SignalHealth v1.0 — Built with care</p>
+
+      </div>
+    </div>
+  )
+}
