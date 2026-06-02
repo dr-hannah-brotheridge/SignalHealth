@@ -45,9 +45,26 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col min-h-screen pb-20 bg-gray-50">
-      <div className="bg-white border-b border-gray-100 px-4 py-4">
-        <h1 className="text-xl font-semibold text-gray-900">My Health Profile</h1>
-        <p className="text-sm text-gray-500 mt-1">Built from your conversations with SignalHealth</p>
+      
+      {/* Branded Header Banner */}
+      <div className="bg-emerald-50 border-b border-emerald-100/30 px-4 py-4 text-center sm:text-left">
+        <div className="max-w-2xl mx-auto w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center justify-center sm:justify-start gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center shadow-sm flex-shrink-0">
+              <span className="text-white text-base font-bold">♥</span>
+            </div>
+            <div className="text-left">
+              <span className="text-lg font-bold tracking-tight text-gray-950">
+                Signal<span className="text-emerald-600">Health</span>
+              </span>
+              <p className="text-xs text-gray-500 font-medium">My Health Profile</p>
+            </div>
+          </div>
+          
+          <span className="hidden sm:block text-xs font-semibold text-emerald-700 bg-emerald-100/60 px-3 py-1 rounded-full border border-emerald-200/50">
+            Confidential
+          </span>
+        </div>
       </div>
 
       <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full">
@@ -65,19 +82,22 @@ export default function ProfilePage() {
 
         {/* Health Summary */}
         {profile?.health_summary && (
-          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 shadow-sm">
             <h2 className="text-base font-semibold text-emerald-800 mb-2">Health Summary</h2>
-            <p className="text-sm text-emerald-700 leading-relaxed">{profile.health_summary}</p>
+            <p className="text-sm text-emerald-700 leading-relaxed font-medium italic">
+              "Built from your conversations with SignalHealth"
+            </p>
+            <p className="text-sm text-emerald-700 leading-relaxed mt-2">{profile.health_summary}</p>
           </div>
         )}
 
         {/* Personal Details */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-50">
+          <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/30">
             <h2 className="text-base font-semibold text-gray-800">Personal Details</h2>
           </div>
           {fields.slice(0, 4).map((field, i) => (
-            <div key={i} className={`px-4 py-3 flex justify-between items-start ${i !== 3 ? 'border-b border-gray-50' : ''}`}>
+            <div key={i} className={`px-4 py-3.5 flex justify-between items-start ${i !== 3 ? 'border-b border-gray-50' : ''}`}>
               <span className="text-sm text-gray-500 w-1/2">{field.label}</span>
               <span className="text-sm text-gray-800 font-medium text-right w-1/2">
                 {field.value || <span className="text-gray-300">Not recorded</span>}
@@ -88,11 +108,11 @@ export default function ProfilePage() {
 
         {/* Medical Information */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-50">
+          <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/30">
             <h2 className="text-base font-semibold text-gray-800">Medical Information</h2>
           </div>
           {fields.slice(4).map((field, i) => (
-            <div key={i} className={`px-4 py-3 flex justify-between items-start ${i !== 5 ? 'border-b border-gray-50' : ''}`}>
+            <div key={i} className={`px-4 py-3.5 flex justify-between items-start ${i !== fields.slice(4).length - 1 ? 'border-b border-gray-50' : ''}`}>
               <span className="text-sm text-gray-500 w-1/2">{field.label}</span>
               <span className="text-sm text-gray-800 font-medium text-right w-1/2">
                 {field.value || <span className="text-gray-300">Not recorded</span>}
@@ -109,7 +129,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <p className="text-xs text-gray-400 text-center pb-4">
+        <p className="text-xs text-gray-400 text-center pb-4 italic">
           This profile is updated automatically as you chat with SignalHealth
         </p>
       </div>

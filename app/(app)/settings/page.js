@@ -109,60 +109,76 @@ We reserve the right to modify these terms at any time. Continued use of the app
 
   return (
     <div className="flex flex-col min-h-screen pb-20 bg-gray-50">
-      <div className="bg-white border-b border-gray-100 px-4 py-4">
-        <h1 className="text-xl font-semibold text-gray-900">Settings</h1>
+      
+      {/* Branded Header Banner */}
+      <div className="bg-emerald-50 border-b border-emerald-100/30 px-4 py-4">
+        <div className="max-w-2xl mx-auto w-full flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center shadow-sm flex-shrink-0">
+              <span className="text-white text-base font-bold">♥</span>
+            </div>
+            <div className="text-left">
+              <span className="text-lg font-bold tracking-tight text-gray-950">
+                Signal<span className="text-emerald-600">Health</span>
+              </span>
+              <p className="text-xs text-gray-500 font-medium">App Settings</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full">
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-50">
+          <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/30">
             <h2 className="text-base font-semibold text-gray-800">Account</h2>
           </div>
-          <button onClick={handleChangePassword} disabled={loading} className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors">
+          <button onClick={handleChangePassword} disabled={loading} className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors group">
             <span className="text-base text-gray-700">Change Password</span>
-            <span className="text-gray-300">›</span>
+            <span className="text-gray-300 group-hover:text-gray-400 transition-colors">›</span>
           </button>
-          <button onClick={handleLogout} className="w-full px-4 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
+          <button onClick={handleLogout} className="w-full px-4 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors group">
             <span className="text-base text-red-500">Sign Out</span>
-            <span className="text-gray-300">›</span>
+            <span className="text-gray-300 group-hover:text-gray-400 transition-colors">›</span>
           </button>
         </div>
 
         {message && (
-          <p className="text-sm text-emerald-600 text-center font-medium bg-emerald-50 py-2.5 px-4 rounded-xl border border-emerald-100">{message}</p>
+          <p className="text-sm text-emerald-600 text-center font-medium bg-emerald-50 py-2.5 px-4 rounded-xl border border-emerald-100 animate-in fade-in slide-in-from-top-1">
+            {message}
+          </p>
         )}
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-50">
+          <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/30">
             <h2 className="text-base font-semibold text-gray-800">Information</h2>
           </div>
-          <button onClick={() => setActiveModal('about')} className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors">
+          <button onClick={() => setActiveModal('about')} className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors group">
             <span className="text-base text-gray-700">About SignalHealth</span>
-            <span className="text-gray-300">›</span>
+            <span className="text-gray-300 group-hover:text-gray-400 transition-colors">›</span>
           </button>
-          <button onClick={() => setActiveModal('disclaimer')} className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors">
+          <button onClick={() => setActiveModal('disclaimer')} className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors group">
             <span className="text-base text-gray-700">Medical Disclaimer</span>
-            <span className="text-gray-300">›</span>
+            <span className="text-gray-300 group-hover:text-gray-400 transition-colors">›</span>
           </button>
-          <button onClick={() => setActiveModal('privacy')} className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors">
+          <button onClick={() => setActiveModal('privacy')} className="w-full px-4 py-4 flex justify-between items-center border-b border-gray-50 hover:bg-gray-50 transition-colors group">
             <span className="text-base text-gray-700">Privacy Policy</span>
-            <span className="text-gray-300">›</span>
+            <span className="text-gray-300 group-hover:text-gray-400 transition-colors">›</span>
           </button>
-          <button onClick={() => setActiveModal('terms')} className="w-full px-4 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
+          <button onClick={() => setActiveModal('terms')} className="w-full px-4 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors group">
             <span className="text-base text-gray-700">Terms of Service</span>
-            <span className="text-gray-300">›</span>
+            <span className="text-gray-300 group-hover:text-gray-400 transition-colors">›</span>
           </button>
         </div>
 
-        <p className="text-xs text-gray-400 text-center">SignalHealth v1.0 — Built with care</p>
+        <p className="text-xs text-gray-400 text-center italic">SignalHealth v1.0 — Built with care in NZ</p>
 
       </div>
 
       {/* Pop-up Info Modal Component */}
       {activeModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-2xl rounded-t-3xl sm:rounded-2xl max-h-[85vh] sm:max-h-[80vh] flex flex-col shadow-xl">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full max-w-2xl rounded-t-3xl sm:rounded-2xl max-h-[85vh] sm:max-h-[80vh] flex flex-col shadow-xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-200">
             
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-3xl sm:rounded-t-2xl">
@@ -184,7 +200,7 @@ We reserve the right to modify these terms at any time. Continued use of the app
             </div>
 
             {/* Modal Footer Close Button */}
-            <div className="p-4 border-t border-gray-100 bg-white sticky bottom-0">
+            <div className="p-4 border-t border-gray-100 bg-white sticky bottom-0 rounded-b-2xl">
               <button 
                 onClick={() => setActiveModal(null)}
                 className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-base rounded-xl transition-colors shadow-sm"
@@ -192,7 +208,6 @@ We reserve the right to modify these terms at any time. Continued use of the app
                 Close Window
               </button>
             </div>
-
           </div>
         </div>
       )}

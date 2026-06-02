@@ -87,22 +87,30 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-screen pb-16">
-      <div className="bg-white border-b border-gray-100 px-4 py-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-          <span className="text-emerald-600 text-xl">♥</span>
+      
+      {/* Brand Header Banner (Pale Green Layout) */}
+      <div className="bg-emerald-50 border-b border-emerald-100/30 px-4 py-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center shadow-sm flex-shrink-0">
+            <span className="text-white text-base font-bold">♥</span>
+          </div>
+          <div className="text-left">
+            <span className="text-lg font-bold tracking-tight text-gray-950">
+              Signal<span className="text-emerald-600">Health</span>
+            </span>
+            <p className="text-xs text-gray-500 font-medium">Your health companion</p>
+          </div>
         </div>
-        <div className="flex-1">
-          <h1 className="text-lg font-semibold text-gray-900">SignalHealth</h1>
-          <p className="text-sm text-gray-500">Your health companion</p>
-        </div>
+        
         <button
           onClick={handleLogout}
-          className="text-sm text-gray-400 hover:text-gray-600 px-3 py-2"
+          className="text-sm font-medium text-gray-500 hover:text-red-500 bg-white/60 hover:bg-white border border-gray-100 px-3 py-1.5 rounded-xl transition-colors shadow-sm"
         >
           Sign out
         </button>
       </div>
 
+      {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 max-w-2xl mx-auto w-full">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -131,6 +139,7 @@ export default function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
+      {/* Chat Input Area */}
       <div className="bg-white border-t border-gray-100 px-4 py-3 pb-4">
         <div className="max-w-2xl mx-auto flex gap-2">
           <input
