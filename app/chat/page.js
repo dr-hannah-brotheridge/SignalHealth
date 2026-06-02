@@ -92,7 +92,7 @@ const res = await fetch('/api/chat', {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${session.access_token}`
   },
-  body: JSON.stringify({ messages: [], userId })
+  body: JSON.stringify({ messages: updatedMessages, userId: user.id })
 })
     const data = await res.json()
     const assistantMessage = { role: 'assistant', content: data.reply }
