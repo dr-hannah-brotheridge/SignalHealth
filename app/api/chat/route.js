@@ -88,8 +88,9 @@ export async function POST(request) {
 
     // Extract and save profile data in background
     if (updatedMessages.length > 2) {
-      extractProfile(updatedMessages).then(async (profile) => {
-        if (!profile) return
+  extractProfile(updatedMessages).then(async (profile) => {
+    console.log('Extracted profile:', JSON.stringify(profile))
+    if (!profile) return
         const updates = {}
         if (profile.name) updates.name = profile.name
         if (profile.age) updates.age = profile.age
@@ -103,10 +104,11 @@ export async function POST(request) {
         if (profile.surgeries) updates.surgeries = profile.surgeries
         if (Object.keys(updates).length > 0) {
           updates.last_updated = new Date().toISOString()
-          await supabase
-            .from('profiles')
-            .update(updates)
-            .eq('id', userId)
+          const { error: profileError } = await supabase
+  .from('profiles')
+  .update(updates)
+  .eq('id', userId)
+console.log('Profile update result:', profileError ? profileError.message : 'success')
         }
       })
     }
