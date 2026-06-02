@@ -40,18 +40,18 @@ export async function POST(request) {
 
     const { profile, userId } = await request.json()
 
-    // Get conversation history [cite: 99]
+    // Get conversation history
     const { data: conversation } = await supabase
-      .from('conversations') [cite: 44]
-      .select('messages') [cite: 47]
-      .eq('user_id', userId) [cite: 46]
+      .from('conversations')
+      .select('messages')
+      .eq('user_id', userId)
       .single()
 
-    const messages = conversation?.messages || [] [cite: 47]
-    const recentMessages = messages.slice(-20).map(m => `${m.role}: ${m.content}`).join('\n') [cite: 99]
+    const messages = conversation?.messages || []
+    const recentMessages = messages.slice(-20).map(m => `${m.role}: ${m.content}`).join('\n')
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6', [cite: 14]
+      model: 'claude-sonnet-4-6',
       max_tokens: 1000,
       messages: [
         {
@@ -90,17 +90,17 @@ CRITICAL FORMATTING RULES:
 4. End with a brief one-sentence factual disclaimer in plain text.
 `
         }
-      }
-    ])
+      ]
+    })
 
     // Extract raw text and clean it up immediately
     let summaryText = response.content[0].text
     summaryText = cleanMarkdown(summaryText)
 
-    // Save cleaned text to Supabase 
+    // Save cleaned text to Supabase
     await supabaseAdmin
-      .from('profiles') [cite: 24]
-      .update({ gp_summary: summaryText }) [cite: 101]
+      .from('profiles')
+      .update({ gp_summary: summaryText })
       .eq('id', userId)
 
     return Response.json({ summary: summaryText })
