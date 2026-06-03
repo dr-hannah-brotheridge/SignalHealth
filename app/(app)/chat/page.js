@@ -7,25 +7,27 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState(null)
+  const [isRedirecting, setIsRedirecting] = useState(false) // UI shield lock state
   const bottomRef = useRef(null)
 
   useEffect(() => {
     const getUser = async () => {
-      // STRICT SECURITY BYPASS: If a recovery link dropped the user here,
-      // halt everything instantly and forward the tokens directly to the login interface.
-      if (
+      // 1. FAST PATH ROUTING LOCKOUT: Prioritize password recovery over any session parsing
+      const isRecovery = 
         window.location.hash.includes('type=recovery') || 
         window.location.href.includes('recovery') || 
         window.location.search.includes('type=recovery')
-      ) {
-        window.location.href = `/login${window.location.hash}${window.location.search}`
+
+      if (isRecovery) {
+        setIsRedirecting(true) // Freeze execution layout instantly
+        window.location.replace(`/login${window.location.hash}${window.location.search}`)
         return
       }
 
-      // Normal auth guard logic for standard chat interactions
+      // 2. Normal Auth Gatekeepers
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        window.location.href = '/login'
+        window.location.replace('/login')
         return
       }
       setUser(user)
@@ -94,7 +96,12 @@ export default function ChatPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    window.location.href = '/login'
+    window.location.replace('/login')
+  }
+
+  // Render shields to capture execution before UI tree parsing begins
+  if (isRedirecting || !user) {
+    return <div className="min-h-screen bg-white" />
   }
 
   return (
