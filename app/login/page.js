@@ -13,34 +13,44 @@ export default function LoginPage() {
   const [isError, setIsError] = useState(false)
 
   useEffect(() => {
-    // 1. Check if user already has an active session
+    // 1. Check for recovery tokens in the URL immediately on mount
+    const isRecoveryInUrl = 
+      window.location.hash.includes('type=recovery') || 
+      window.location.search.includes('type=recovery');
+    
+    if (isRecoveryInUrl) {
+      setAuthMode('recovery');
+    }
+
     const checkUserSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      // Only redirect to chat if we aren't handling a recovery process
-      if (session && authMode !== 'recovery') {
+      
+      // ONLY redirect if there is a session AND we aren't in recovery mode
+      // This stops the page from bouncing to chat while the user is typing a new password
+      if (session && authMode !== 'recovery' && !isRecoveryInUrl) {
         window.location.href = '/chat'
       }
     }
     checkUserSession()
 
-    // 2. Intercept the background recovery event from the email link
+    // 2. Listen for the specific PASSWORD_RECOVERY event from Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setAuthMode('recovery')
-      } else if (session && authMode !== 'recovery') {
+      } else if (event === 'SIGNED_IN' && authMode !== 'recovery') {
+        // Only auto-redirect on standard sign-ins, not during password updates
         window.location.href = '/chat'
       }
     })
 
     return () => subscription.unsubscribe()
-  }, [authMode])
+  }, [authMode]) // Re-run logic if authMode changes to ensure we don't redirect away from recovery
 
   const handleAuth = async (e) => {
     if (e) e.preventDefault()
     setMessage('')
     setIsError(false)
     
-    // FLOW A: CHOOSE NEW PASSWORD SUBMISSION
     if (authMode === 'recovery') {
       if (password !== confirmPassword) {
         setIsError(true)
@@ -67,7 +77,6 @@ export default function LoginPage() {
       return
     }
 
-    // FLOW B: REQUEST RESET LINK (Sends Email)
     if (authMode === 'forgot') {
       if (!email) {
         setIsError(true)
@@ -88,7 +97,6 @@ export default function LoginPage() {
       return
     }
 
-    // FLOW C: STANDARD SIGN UP
     if (authMode === 'signup' && password !== confirmPassword) {
       setIsError(true)
       setMessage("Passwords do not match.")
@@ -106,7 +114,6 @@ export default function LoginPage() {
         setMessage('Check your email to confirm your account!')
       }
     } else {
-      // FLOW D: STANDARD SIGN IN
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
         setIsError(true)
@@ -121,7 +128,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
       
-      {/* Hero Section (Hidden if in active focused recovery mode to keep UI locked down) */}
       {authMode !== 'recovery' && (
         <div className="px-6 pt-12 pb-14 bg-emerald-50 text-center border-b border-emerald-100/30">
           <div className="flex items-center justify-center gap-2.5 mb-8">
@@ -151,7 +157,6 @@ export default function LoginPage() {
 
       <div className="max-w-2xl mx-auto px-6 py-12 space-y-16">
         
-        {/* Main Content Sections (Hidden in Recovery mode) */}
         {authMode !== 'recovery' && (
           <>
             <section>
@@ -184,7 +189,6 @@ export default function LoginPage() {
           </>
         )}
 
-        {/* Integrated Auth Container */}
         <section id="auth-box" className={authMode === 'recovery' ? 'pt-4' : 'pt-12 border-t border-gray-100'}>
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-md mx-auto">
             <div className="flex items-center gap-3 mb-6">
@@ -206,7 +210,6 @@ export default function LoginPage() {
 
             <form onSubmit={handleAuth} className="space-y-4">
               
-              {/* Email Field (Hidden in focused recovery mode) */}
               {authMode !== 'recovery' && (
                 <input
                   type="email"
@@ -218,7 +221,6 @@ export default function LoginPage() {
                 />
               )}
               
-              {/* Password Inputs */}
               {authMode !== 'forgot' && (
                 <>
                   <div className="relative">
@@ -239,7 +241,6 @@ export default function LoginPage() {
                     </button>
                   </div>
 
-                  {/* Secondary Confirm Field (Sign Up OR Recovery Mode) */}
                   {(authMode === 'signup' || authMode === 'recovery') && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-200">
                       <input
@@ -286,7 +287,6 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Bottom navigation links */}
             {authMode !== 'recovery' && (
               <div className="text-sm text-gray-500 text-center mt-6 space-y-2">
                 {authMode === 'forgot' ? (
