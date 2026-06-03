@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
-import { usePushNotifications } from '../hooks/usePushNotifications' // 1. Import the hook
+import { usePushNotifications } from '../../hooks/usePushNotifications' // 1. Import the hook
 
 export default function ChatPage() {
   const [messages, setMessages] = useState([])
