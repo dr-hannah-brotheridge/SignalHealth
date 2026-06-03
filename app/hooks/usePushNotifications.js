@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase' // Use your existing configured client!
+import { supabase } from '../../lib/supabase'
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -32,7 +32,6 @@ export function usePushNotifications() {
         subscription = await registration.pushManager.subscribe(subscribeOptions)
       }
 
-      // Now this uses the exact same session as the rest of your app
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
