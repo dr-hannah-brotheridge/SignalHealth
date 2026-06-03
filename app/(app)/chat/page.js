@@ -11,14 +11,18 @@ export default function ChatPage() {
 
   useEffect(() => {
     const getUser = async () => {
-      // 1. Check if the URL contains a recovery hash or access token from Supabase Auth
-      if (window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery')) {
-        // Kick them back to login immediately so the Login page's onAuthStateChange can handle it
+      // STRICT SECURITY BYPASS: If a recovery link dropped the user here,
+      // halt everything instantly and forward the tokens directly to the login interface.
+      if (
+        window.location.hash.includes('type=recovery') || 
+        window.location.href.includes('recovery') || 
+        window.location.search.includes('type=recovery')
+      ) {
         window.location.href = `/login${window.location.hash}${window.location.search}`
         return
       }
 
-      // 2. Normal auth guard sequence
+      // Normal auth guard logic for standard chat interactions
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         window.location.href = '/login'
