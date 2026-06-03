@@ -62,7 +62,7 @@ export default function SummaryPage() {
               <span className="text-lg font-bold tracking-tight text-gray-950">
                 Signal<span className="text-emerald-600">Health</span>
               </span>
-              <p className="text-xs text-gray-500 font-medium">Clinical Summary</p>
+              <p className="text-xs text-gray-500 font-medium">GP Clinical Summary</p>
             </div>
           </div>
         </div>
