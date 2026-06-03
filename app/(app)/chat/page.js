@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
-import { usePushNotifications } from '../../hooks/usePushNotifications' // 1. Import the hook
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 export default function ChatPage() {
   const [messages, setMessages] = useState([])
@@ -11,11 +11,11 @@ export default function ChatPage() {
   const [isRedirecting, setIsRedirecting] = useState(false)
   const bottomRef = useRef(null)
   
-  const { subscribeToPush } = usePushNotifications() // 2. Initialize the hook
+  const { subscribeToPush } = usePushNotifications()
 
-  // ... (keep your existing useEffects and functions here) ...
   useEffect(() => {
-    const getUser = async () => {
+    const checkAuth = async () => {
+      // Handle recovery link scenario
       const isRecovery = 
         window.location.hash.includes('type=recovery') || 
         window.location.href.includes('recovery') || 
@@ -27,15 +27,20 @@ export default function ChatPage() {
         return
       }
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
+      // Check session robustly
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error || !session) {
+        console.log("No active session, redirecting to login...")
         window.location.replace('/login')
         return
       }
-      setUser(user)
-      loadConversation(user.id)
+
+      setUser(session.user)
+      loadConversation(session.user.id)
     }
-    getUser()
+    
+    checkAuth()
   }, [])
 
   useEffect(() => {
@@ -107,8 +112,6 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-screen pb-16">
-      
-      {/* Brand Header Banner */}
       <div className="bg-emerald-50 border-b border-emerald-100/30 px-4 py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center shadow-sm flex-shrink-0">
@@ -121,7 +124,6 @@ export default function ChatPage() {
           </div>
         </div>
         
-        {/* 3. Added the Trigger Button here */}
         <div className="flex items-center gap-2">
           <button
             onClick={async () => {
@@ -141,7 +143,6 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* ... (keep your existing Chat Messages and Chat Input Area) ... */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 max-w-2xl mx-auto w-full">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -172,14 +173,14 @@ export default function ChatPage() {
 
       <div className="bg-white border-t border-gray-100 px-4 py-3 pb-4">
         <div className="max-w-2xl mx-auto flex gap-2">
-         <input
-  type="text"
-  value={input}
-  onChange={e => setInput(e.target.value)}
-  onKeyDown={e => e.key === 'Enter' && sendMessage()}
-  placeholder="Type a message..."
-  className="flex-1 border border-gray-200 rounded-2xl px-4 py-3 text-base text-gray-900 placeholder-gray-400 outline-none focus:border-emerald-400 bg-white"
-/>
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && sendMessage()}
+            placeholder="Type a message..."
+            className="flex-1 border border-gray-200 rounded-2xl px-4 py-3 text-base text-gray-900 placeholder-gray-400 outline-none focus:border-emerald-400 bg-white"
+          />
           <button
             onClick={sendMessage}
             disabled={loading}
