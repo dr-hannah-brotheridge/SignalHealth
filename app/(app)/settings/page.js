@@ -228,7 +228,7 @@ We reserve the right to modify these terms at any time. Continued use of the app
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-base text-gray-400 hover:text-gray-600 focus:outline-none select-none"
                 >
-                  {showPassword ? '🙈' : '👁️'}
+                  {showPassword ? '⌣' : '👁'}
                 </button>
               </div>
 
@@ -364,7 +364,7 @@ We reserve the right to modify these terms at any time. Continued use of the app
           </button>
         </div>
 
-        <p className="text-xs text-gray-400 text-center italic">SignalHealth v1.0 — Built with care in NZ</p>
+        <p className="text-xs text-gray-400 text-center italic">SignalHealth v1.0 — Built by Dr Hannah Brotheridge in NZ</p>
 
       </div>
 

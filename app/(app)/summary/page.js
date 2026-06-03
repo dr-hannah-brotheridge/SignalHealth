@@ -62,7 +62,7 @@ export default function SummaryPage() {
               <span className="text-lg font-bold tracking-tight text-gray-950">
                 Signal<span className="text-emerald-600">Health</span>
               </span>
-              <p className="text-xs text-gray-500 font-medium">GP Clinical Summary</p>
+              <p className="text-xs text-gray-500 font-medium">Clinical Summary</p>
             </div>
           </div>
         </div>
@@ -72,7 +72,7 @@ export default function SummaryPage() {
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
           <p className="text-sm text-gray-600 leading-relaxed">
-            SignalHealth can generate a structured summary of your health profile and recent concerns that you can share with your GP or specialist.
+            SignalHealth can generate a structured summary of your health profile and recent concerns that you can share with your healthcare provider.
           </p>
         </div>
 

@@ -101,7 +101,7 @@ export default function ProfilePage() {
           <div>
             <h3 className="text-sm font-semibold text-amber-900">Need to make adjustments?</h3>
             <p className="text-sm text-amber-800 mt-0.5 leading-relaxed">
-              To alter your profile, just let me know in that chat!
+              To alter your profile, just let me know in the chat!
             </p>
           </div>
         </div>
