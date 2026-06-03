@@ -1,6 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '../lib/supabase' // Use your existing configured client!
 
-// Helper function to convert your VAPID public key
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/')
@@ -13,16 +12,9 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 export function usePushNotifications() {
-  // Use the standard Supabase client constructor
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
-
   const subscribeToPush = async () => {
     try {
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.warn('Push notifications are not supported.')
         return null
       }
 
@@ -40,6 +32,7 @@ export function usePushNotifications() {
         subscription = await registration.pushManager.subscribe(subscribeOptions)
       }
 
+      // Now this uses the exact same session as the rest of your app
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
