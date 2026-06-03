@@ -1,6 +1,6 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/supabase-js'
 
-// Helper function to convert your VAPID public key string into a format the browser requires
+// Helper function to convert your VAPID public key
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/')
@@ -13,27 +13,26 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 export function usePushNotifications() {
-  // Use the helper directly, it works with your existing setup
-  const supabase = createClientComponentClient()
+  // Use the standard Supabase client constructor
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  )
 
   const subscribeToPush = async () => {
     try {
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.warn('Push notifications are not supported on this browser/device.')
+        console.warn('Push notifications are not supported.')
         return null
       }
 
       const registration = await navigator.serviceWorker.ready
       const permission = await Notification.requestPermission()
-      if (permission !== 'granted') {
-        throw new Error('Notification permission denied by user.')
-      }
+      if (permission !== 'granted') throw new Error('Permission denied.')
 
       const subscribeOptions = {
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(
-          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-        ),
+        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY),
       }
 
       let subscription = await registration.pushManager.getSubscription()
@@ -42,7 +41,7 @@ export function usePushNotifications() {
       }
 
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User must be logged in to subscribe.')
+      if (!user) throw new Error('Not authenticated')
 
       const { error } = await supabase
         .from('push_subscriptions')
@@ -51,13 +50,10 @@ export function usePushNotifications() {
           subscription: subscription.toJSON(),
         })
 
-      if (error && error.code !== '23505') {
-        throw error
-      }
-
+      if (error && error.code !== '23505') throw error
       return true
     } catch (err) {
-      console.error('Failed to subscribe to push notifications:', err)
+      console.error(err)
       return false
     }
   }
