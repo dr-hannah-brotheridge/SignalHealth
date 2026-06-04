@@ -79,13 +79,19 @@ export async function POST(request) {
       : SYSTEM_PROMPT
 
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
-      system: systemWithContext,
-      messages: messages.length === 0
-        ? [{ role: 'user', content: 'Hello, I am opening the app for the first time.' }]
-        : messagesToSend
-    })
+  model: 'claude-sonnet-4-6',
+  max_tokens: 1000,
+  system: [
+    {
+      type: 'text',
+      text: systemWithContext,
+      cache_control: { type: 'ephemeral' }
+    }
+  ],
+  messages: messages.length === 0
+    ? [{ role: 'user', content: 'Hello, I am opening the app for the first time.' }]
+    : messagesToSend
+})
 
     const reply = response.content[0].text
 
