@@ -1,5 +1,5 @@
 ## SignalHealth PWA
-**signalhealth.dev**
+**https://signalhealth.dev/**
 
 ## Tech Stack: 
 Node.js, Supabase (PostgreSQL/RLS), Anthropic API (Claude), Vercel.
