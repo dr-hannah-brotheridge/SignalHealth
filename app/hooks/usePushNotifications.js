@@ -94,7 +94,32 @@
         }
         console.log('✅ User authenticated:', user.id)
 
-        console.log('💾 Saving subscription to database...')
+        console.log('💾 Checking if subscription already exists in database...')
+        const { data: existingSubs } = await supabase
+          .from('push_subscriptions')
+          .select('id')
+          .eq('user_id', user.id)
+
+        if (existingSubs && existingSubs.length > 0) {
+          console.log('ℹ️ Subscription already exists in database, updating...')
+          const subscriptionData = subscription.toJSON()
+          
+          const { error: updateError } = await supabase
+            .from('push_subscriptions')
+            .update({ subscription: subscriptionData })
+            .eq('user_id', user.id)
+            .limit(1)
+
+          if (updateError) {
+            console.error('❌ Update error:', updateError)
+            return { success: false, error: `Failed to update subscription: ${updateError.message}` }
+          }
+
+          console.log('✅ Subscription updated successfully')
+          return { success: true, message: 'Notifications updated successfully!' }
+        }
+
+        console.log('💾 Saving new subscription to database...')
         const subscriptionData = subscription.toJSON()
         console.log('📦 Subscription data:', {
           endpoint: subscriptionData.endpoint,
@@ -109,10 +134,6 @@
           })
 
         if (error) {
-          if (error.code === '23505') {
-            console.log('ℹ️ Subscription already exists (duplicate)')
-            return { success: true, message: 'Notifications are already enabled!' }
-          }
           console.error('❌ Database error:', error)
           return { success: false, error: `Failed to save subscription: ${error.message}` }
         }
