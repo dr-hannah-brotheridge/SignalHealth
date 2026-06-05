@@ -4,7 +4,16 @@ import webpush from 'web-push'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
 
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+console.log('🔧 Check-ins API Configuration:')
+console.log('  Supabase URL:', supabaseUrl ? '✅ Set' : '❌ Missing')
+console.log('  Service Key:', supabaseServiceKey ? '✅ Set (length: ' + supabaseServiceKey.length + ')' : '❌ Missing')
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+})
 
 // Configure VAPID
 webpush.setVapidDetails(
