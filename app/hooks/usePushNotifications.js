@@ -26,11 +26,21 @@
         return { success: false, error: 'Push notifications are not supported in this browser' }
       }
       
-      // Check VAPID key
-      if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+      // Check VAPID key and strip quotes if present
+      let vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      if (!vapidKey) {
         console.error('❌ VAPID public key is not configured')
         return { success: false, error: 'VAPID key not configured. Please contact support.' }
       }
+      
+      // Strip quotes if they were accidentally included
+      vapidKey = vapidKey.replace(/^["']|["']$/g, '')
+      if (!vapidKey) {
+        console.error('❌ VAPID public key is empty after stripping quotes')
+        return { success: false, error: 'VAPID key is empty. Please contact support.' }
+      }
+      
+      console.log('🔑 VAPID key found (length:', vapidKey.length, 'chars)')
       
       try {
         console.log('⏳ Waiting for service worker to be ready...')
