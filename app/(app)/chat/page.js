@@ -9,6 +9,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [notificationMessage, setNotificationMessage] = useState(null)
   const bottomRef = useRef(null)
   
   const { subscribeToPush } = usePushNotifications()
@@ -127,8 +128,12 @@ export default function ChatPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={async () => {
-              const granted = await subscribeToPush()
-              if (granted) alert("Notifications enabled!")
+              const result = await subscribeToPush()
+              if (result.success) {
+                alert(result.message || "Notifications enabled!")
+              } else {
+                alert(result.error || "Failed to enable notifications")
+              }
             }}
             className="text-xs font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-xl transition-colors"
           >
