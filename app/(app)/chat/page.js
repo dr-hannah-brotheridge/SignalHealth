@@ -12,7 +12,8 @@ export default function ChatPage() {
   const [notificationMessage, setNotificationMessage] = useState(null)
   const bottomRef = useRef(null)
   
-  const { subscribeToPush } = usePushNotifications()
+  const { subscribeToPush, unsubscribeFromPush } = usePushNotifications()
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -47,6 +48,21 @@ export default function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    const checkNotificationStatus = async () => {
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.ready
+          const subscription = await registration.pushManager.getSubscription()
+          setNotificationsEnabled(!!subscription)
+        } catch (err) {
+          console.error('Error checking notification status:', err)
+        }
+      }
+    }
+    checkNotificationStatus()
+  }, [])
 
   const loadConversation = async (userId) => {
     const { data } = await supabase
@@ -126,19 +142,37 @@ export default function ChatPage() {
         </div>
         
         <div className="flex items-center gap-2">
-          <button
-            onClick={async () => {
-              const result = await subscribeToPush()
-              if (result.success) {
-                alert(result.message || "Notifications enabled!")
-              } else {
-                alert(result.error || "Failed to enable notifications")
-              }
-            }}
-            className="text-xs font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-xl transition-colors"
-          >
-            Enable Alerts
-          </button>
+          {notificationsEnabled ? (
+            <button
+              onClick={async () => {
+                const result = await unsubscribeFromPush()
+                if (result.success) {
+                  setNotificationsEnabled(false)
+                  alert(result.message || "Notifications disabled!")
+                } else {
+                  alert(result.error || "Failed to disable notifications")
+                }
+              }}
+              className="text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-xl transition-colors"
+            >
+              Disable Alerts
+            </button>
+          ) : (
+            <button
+              onClick={async () => {
+                const result = await subscribeToPush()
+                if (result.success) {
+                  setNotificationsEnabled(true)
+                  alert(result.message || "Notifications enabled!")
+                } else {
+                  alert(result.error || "Failed to enable notifications")
+                }
+              }}
+              className="text-xs font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-xl transition-colors"
+            >
+              Enable Alerts
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="text-sm font-medium text-gray-500 hover:text-red-500 bg-white/60 hover:bg-white border border-gray-100 px-3 py-1.5 rounded-xl transition-colors shadow-sm"
