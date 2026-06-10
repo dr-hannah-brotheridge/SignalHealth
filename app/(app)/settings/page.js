@@ -463,6 +463,9 @@ We reserve the right to modify these terms at any time. Continued use of the app
                   checked={notificationPreferences.enabled}
                   onChange={async (e) => {
                     const newEnabled = e.target.checked
+                    const oldEnabled = notificationPreferences.enabled
+                    
+                    // Update state optimistically
                     setNotificationPreferences(prev => ({ ...prev, enabled: newEnabled }))
                     
                     // Auto-save immediately
@@ -482,17 +485,20 @@ We reserve the right to modify these terms at any time. Continued use of the app
                       
                       if (data.success) {
                         setMessage(newEnabled ? 'Notifications enabled!' : 'Notifications disabled!')
+                        // Reload preferences to ensure sync with database
+                        await loadNotificationPreferences(user.id)
                       } else {
                         setIsError(true)
                         setMessage(data.error || 'Failed to update')
                         // Revert on error
-                        setNotificationPreferences(prev => ({ ...prev, enabled: !newEnabled }))
+                        setNotificationPreferences(prev => ({ ...prev, enabled: oldEnabled }))
                       }
                     } catch (error) {
                       setIsError(true)
                       setMessage('Failed to update')
+                      console.error('Error updating notification preferences:', error)
                       // Revert on error
-                      setNotificationPreferences(prev => ({ ...prev, enabled: !newEnabled }))
+                      setNotificationPreferences(prev => ({ ...prev, enabled: oldEnabled }))
                     }
                   }}
                   className="sr-only"
