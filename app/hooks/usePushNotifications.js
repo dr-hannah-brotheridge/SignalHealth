@@ -12,6 +12,80 @@
   }
 
   export function usePushNotifications() {
+    const unsubscribeFromPush = async () => {
+      console.log('🔕 Starting push notification unsubscription...')
+      
+      // Check browser support
+      if (!('serviceWorker' in navigator)) {
+        console.error('❌ Service Workers are not supported in this browser')
+        return { success: false, error: 'Service Workers are not supported in this browser' }
+      }
+      
+      if (!('PushManager' in window)) {
+        console.error('❌ Push notifications are not supported in this browser')
+        return { success: false, error: 'Push notifications are not supported in this browser' }
+      }
+      
+      try {
+        console.log('⏳ Waiting for service worker to be ready...')
+        let registration
+        try {
+          registration = await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Service worker ready timeout')), 10000)
+            )
+          ])
+          console.log('✅ Service worker is ready:', registration.scope)
+        } catch (err) {
+          console.error('❌ Service worker not ready:', err)
+          return { success: false, error: 'Service worker not ready. Please refresh and try again.' }
+        }
+
+        console.log('⏳ Getting current push subscription...')
+        const subscription = await registration.pushManager.getSubscription()
+        
+        if (!subscription) {
+          console.log('ℹ️ No active subscription found')
+          return { success: true, message: 'No active subscription to remove.' }
+        }
+
+        console.log('🔐 Checking authentication...')
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          console.error('❌ Not authenticated')
+          return { success: false, error: 'You must be logged in to disable notifications.' }
+        }
+        console.log('✅ User authenticated:', user.id)
+
+        console.log('💾 Removing subscription from database...')
+        const subscriptionData = subscription.toJSON()
+        const endpoint = subscriptionData.endpoint
+        
+        const { error: deleteError } = await supabase
+          .from('push_subscriptions')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('endpoint', endpoint)
+
+        if (deleteError) {
+          console.error('❌ Database error:', deleteError)
+          return { success: false, error: `Failed to remove subscription: ${deleteError.message}` }
+        }
+
+        console.log('✅ Subscription removed from database')
+
+        console.log('📝 Unsubscribing from push service...')
+        await subscription.unsubscribe()
+        console.log('✅ Unsubscribed from push service')
+
+        return { success: true, message: 'Notifications disabled successfully!' }
+      } catch (err) {
+        console.error('❌ Unsubscription failed:', err)
+        return { success: false, error: `Failed to disable notifications: ${err.message}` }
+      }
+    }
+
     const subscribeToPush = async () => {
       console.log('🔔 Starting push notification subscription...')
       
@@ -159,5 +233,5 @@
       }
     }
 
-    return { subscribeToPush }
+    return { subscribeToPush, unsubscribeFromPush }
   }
