@@ -51,18 +51,41 @@ export default function ChatPage() {
 
   useEffect(() => {
     const checkNotificationStatus = async () => {
-      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator && user) {
         try {
           const registration = await navigator.serviceWorker.ready
           const subscription = await registration.pushManager.getSubscription()
-          setNotificationsEnabled(!!subscription)
+          
+          if (subscription) {
+            // Check if subscription exists in database
+            const subscriptionData = subscription.toJSON()
+            const { data: existingSubs } = await supabase
+              .from('push_subscriptions')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('endpoint', subscriptionData.endpoint)
+            
+            if (existingSubs && existingSubs.length > 0) {
+              // Subscription exists in both browser and database
+              setNotificationsEnabled(true)
+            } else {
+              // Browser has subscription but database doesn't - clean up
+              console.log('🧹 Cleaning up orphaned browser subscription...')
+              await subscription.unsubscribe()
+              setNotificationsEnabled(false)
+            }
+          } else {
+            // No browser subscription
+            setNotificationsEnabled(false)
+          }
         } catch (err) {
           console.error('Error checking notification status:', err)
+          setNotificationsEnabled(false)
         }
       }
     }
     checkNotificationStatus()
-  }, [])
+  }, [user])
 
   const loadConversation = async (userId) => {
     const { data } = await supabase
