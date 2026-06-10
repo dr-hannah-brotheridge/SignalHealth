@@ -62,18 +62,27 @@
         const subscriptionData = subscription.toJSON()
         const endpoint = subscriptionData.endpoint
         
-        const { error: deleteError } = await supabase
+        const { data: existingSubs } = await supabase
           .from('push_subscriptions')
-          .delete()
+          .select('id, subscription')
           .eq('user_id', user.id)
-          .eq('endpoint', endpoint)
 
-        if (deleteError) {
-          console.error('❌ Database error:', deleteError)
-          return { success: false, error: `Failed to remove subscription: ${deleteError.message}` }
+        const matchingSub = existingSubs?.find(sub => sub.subscription?.endpoint === endpoint)
+
+        if (!matchingSub) {
+          console.log('ℹ️ Subscription not found in database, only unsubscribing from browser')
+        } else {
+          const { error: deleteError } = await supabase
+            .from('push_subscriptions')
+            .delete()
+            .eq('id', matchingSub.id)
+
+          if (deleteError) {
+            console.error('❌ Database error:', deleteError)
+            return { success: false, error: `Failed to remove subscription: ${deleteError.message}` }
+          }
+          console.log('✅ Subscription removed from database')
         }
-
-        console.log('✅ Subscription removed from database')
 
         console.log('📝 Unsubscribing from push service...')
         await subscription.unsubscribe()
@@ -174,17 +183,18 @@
         
         const { data: existingSubs } = await supabase
           .from('push_subscriptions')
-          .select('id')
+          .select('id, subscription')
           .eq('user_id', user.id)
-          .eq('endpoint', endpoint)
 
-        if (existingSubs && existingSubs.length > 0) {
+        const matchingSub = existingSubs?.find(sub => sub.subscription?.endpoint === endpoint)
+
+        if (matchingSub) {
           console.log('ℹ️ Subscription already exists in database, updating...')
           
           const { error: updateError } = await supabase
             .from('push_subscriptions')
             .update({ subscription: subscriptionData })
-            .eq('id', existingSubs[0].id)
+            .eq('id', matchingSub.id)
 
           if (updateError) {
             console.error('❌ Update error:', updateError)

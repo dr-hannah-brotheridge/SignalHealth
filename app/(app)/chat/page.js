@@ -61,11 +61,12 @@ export default function ChatPage() {
             const subscriptionData = subscription.toJSON()
             const { data: existingSubs } = await supabase
               .from('push_subscriptions')
-              .select('id')
+              .select('id, subscription')
               .eq('user_id', user.id)
-              .eq('endpoint', subscriptionData.endpoint)
             
-            if (existingSubs && existingSubs.length > 0) {
+            const matchingSub = existingSubs?.find(sub => sub.subscription?.endpoint === subscriptionData.endpoint)
+            
+            if (matchingSub) {
               // Subscription exists in both browser and database
               setNotificationsEnabled(true)
             } else {
