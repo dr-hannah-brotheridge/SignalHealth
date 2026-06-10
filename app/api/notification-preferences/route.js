@@ -130,22 +130,56 @@ export async function POST(request) {
       timezone
     })
 
-    // Upsert preferences
-    const { data: preferences, error } = await supabase
+    // Check if preferences already exist
+    const { data: existingPrefs } = await supabase
       .from('notification_preferences')
-      .upsert({
-        user_id: user.id,
-        enabled: enabled !== undefined ? enabled : true,
-        frequency: frequency || 'daily',
-        days_of_week: days_of_week || [],
-        day_of_month: day_of_month || 1,
-        time: time || '09:00',
-        timezone: timezone || 'UTC',
-        next_check_in_at: nextCheckInAt,
-        updated_at: new Date().toISOString()
-      })
-      .select()
+      .select('id')
+      .eq('user_id', user.id)
       .single()
+
+    let preferences, error
+
+    if (existingPrefs) {
+      // Update existing record
+      const result = await supabase
+        .from('notification_preferences')
+        .update({
+          enabled: enabled !== undefined ? enabled : true,
+          frequency: frequency || 'daily',
+          days_of_week: days_of_week || [],
+          day_of_month: day_of_month || 1,
+          time: time || '09:00',
+          timezone: timezone || 'UTC',
+          next_check_in_at: nextCheckInAt,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingPrefs.id)
+        .select()
+        .single()
+      
+      preferences = result.data
+      error = result.error
+    } else {
+      // Insert new record
+      const result = await supabase
+        .from('notification_preferences')
+        .insert({
+          user_id: user.id,
+          enabled: enabled !== undefined ? enabled : true,
+          frequency: frequency || 'daily',
+          days_of_week: days_of_week || [],
+          day_of_month: day_of_month || 1,
+          time: time || '09:00',
+          timezone: timezone || 'UTC',
+          next_check_in_at: nextCheckInAt,
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+      
+      preferences = result.data
+      error = result.error
+    }
 
     if (error) {
       console.error('Error saving notification preferences:', error)
