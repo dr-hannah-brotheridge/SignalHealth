@@ -16,8 +16,8 @@ async function extractProfile(currentProfile, recentMessages) {
     console.log('📋 Current profile:', JSON.stringify(currentProfile, null, 2))
     
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 500,
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
       messages: [
         {
           role: 'user',
