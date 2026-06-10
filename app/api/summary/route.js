@@ -179,6 +179,25 @@ ${freshHealthStory || 'No health story available'}
 Recent conversation highlights:
 ${recentMessages}
 
+CRITICAL MEDICATION RULE (Applies to ALL sections):
+When mentioning medications in ANY section of the summary (Current Concerns, Medications, Relevant Medical History, Suggested Discussion Points for GP):
+
+ONLY state medication purpose if:
+- The user explicitly said "I take [medication] for [condition]"
+- This is explicitly recorded in their profile
+
+DO NOT state medication purpose if:
+- The user only mentioned the medication name
+- The purpose is not explicitly stated or recorded
+- You are inferring it from symptoms or patterns
+
+Examples:
+- User said "I take lamotrigine for migraines" → OK to say "lamotrigine for migraines"
+- User only said "I take lamotrigine" → NOT OK to say "lamotrigine for migraines"
+- User has migraines and takes lamotrigine → NOT OK to say "lamotrigine for migraines" (inference)
+
+Do NOT infer or assume medication purposes. Only use information explicitly stated by the user.
+
 Generate a clear, structured GP summary using ONLY the following section headers exactly as written, followed by a colon. 
 
 Patient Overview:
