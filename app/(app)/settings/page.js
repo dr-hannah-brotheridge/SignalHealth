@@ -1,11 +1,21 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [isError, setIsError] = useState(false)
+  const [user, setUser] = useState(null)
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    enabled: true,
+    frequency: 'daily',
+    days_of_week: [],
+    day_of_month: 1,
+    time: '09:00',
+    timezone: 'UTC'
+  })
+  const [savingPreferences, setSavingPreferences] = useState(false)
   
   // Controls the legal text pop-up modals
   const [activeModal, setActiveModal] = useState(null)
@@ -19,6 +29,113 @@ export default function SettingsPage() {
   // Controls Account Deletion flow
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('')
+
+  const daysOfWeek = [
+    { value: 0, label: 'Sun' },
+    { value: 1, label: 'Mon' },
+    { value: 2, label: 'Tue' },
+    { value: 3, label: 'Wed' },
+    { value: 4, label: 'Thu' },
+    { value: 5, label: 'Fri' },
+    { value: 6, label: 'Sat' }
+  ]
+
+  const timezones = [
+    'UTC',
+    'America/New_York',
+    'America/Los_Angeles',
+    'America/Chicago',
+    'Europe/London',
+    'Europe/Paris',
+    'Asia/Tokyo',
+    'Australia/Sydney',
+    'Pacific/Auckland'
+  ]
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error || !session) {
+        window.location.replace('/login')
+        return
+      }
+
+      setUser(session.user)
+      loadNotificationPreferences(session.user.id)
+    }
+    
+    checkAuth()
+  }, [])
+
+  const loadNotificationPreferences = async (userId) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/notification-preferences', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+      const data = await res.json()
+      
+      if (data.preferences) {
+        setNotificationPreferences(data.preferences)
+      }
+    } catch (error) {
+      console.error('Error loading notification preferences:', error)
+    }
+  }
+
+  const handleSaveNotificationPreferences = async () => {
+    setSavingPreferences(true)
+    setMessage('')
+    setIsError(false)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/notification-preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(notificationPreferences)
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        setMessage('Notification preferences saved successfully!')
+      } else {
+        setIsError(true)
+        setMessage(data.error || 'Failed to save preferences')
+      }
+    } catch (error) {
+      setIsError(true)
+      setMessage('Failed to save preferences')
+    } finally {
+      setSavingPreferences(false)
+    }
+  }
+
+  const handleDayToggle = (dayValue) => {
+    setNotificationPreferences(prev => ({
+      ...prev,
+      days_of_week: prev.days_of_week.includes(dayValue)
+        ? prev.days_of_week.filter(d => d !== dayValue)
+        : [...prev.days_of_week, dayValue]
+    }))
+  }
+
+  function getOrdinalSuffix(day) {
+    if (day > 3 && day < 21) return 'th'
+    switch (day % 10) {
+      case 1: return 'st'
+      case 2: return 'nd'
+      case 3: return 'rd'
+      default: return 'th'
+    }
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -327,6 +444,129 @@ We reserve the right to modify these terms at any time. Continued use of the app
                 </button>
               </div>
             </form>
+          )}
+        </div>
+
+        {/* Notification Preferences Card */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/30">
+            <h2 className="text-base font-semibold text-gray-800">Notification Preferences</h2>
+          </div>
+          
+          {/* Enable/Disable Toggle */}
+          <div className="px-4 py-4 border-b border-gray-50">
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-base text-gray-700">Enable Notifications</span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={notificationPreferences.enabled}
+                  onChange={(e) => setNotificationPreferences(prev => ({ ...prev, enabled: e.target.checked }))}
+                  className="sr-only"
+                />
+                <div className={`w-14 h-8 rounded-full transition-colors ${
+                  notificationPreferences.enabled ? 'bg-emerald-600' : 'bg-gray-300'
+                }`}>
+                  <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform ${
+                    notificationPreferences.enabled ? 'translate-x-6' : 'translate-x-1'
+                  } mt-1`}></div>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          {notificationPreferences.enabled && (
+            <>
+              {/* Frequency Selector */}
+              <div className="px-4 py-4 border-b border-gray-50">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                <select
+                  value={notificationPreferences.frequency}
+                  onChange={(e) => setNotificationPreferences(prev => ({ ...prev, frequency: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:border-emerald-400 focus:outline-none"
+                >
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </div>
+
+              {/* Days of Week (for weekly) */}
+              {notificationPreferences.frequency === 'weekly' && (
+                <div className="px-4 py-4 border-b border-gray-50">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Days</label>
+                  <div className="grid grid-cols-7 gap-2">
+                    {daysOfWeek.map(day => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => handleDayToggle(day.value)}
+                        className={`py-2 px-2 rounded-lg text-xs font-medium transition-colors ${
+                          notificationPreferences.days_of_week.includes(day.value)
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Day of Month (for monthly) */}
+              {notificationPreferences.frequency === 'monthly' && (
+                <div className="px-4 py-4 border-b border-gray-50">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Day of Month</label>
+                  <select
+                    value={notificationPreferences.day_of_month}
+                    onChange={(e) => setNotificationPreferences(prev => ({ ...prev, day_of_month: parseInt(e.target.value) }))}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:border-emerald-400 focus:outline-none"
+                  >
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                      <option key={day} value={day}>{day}{getOrdinalSuffix(day)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Time Picker */}
+              <div className="px-4 py-4 border-b border-gray-50">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                <input
+                  type="time"
+                  value={notificationPreferences.time}
+                  onChange={(e) => setNotificationPreferences(prev => ({ ...prev, time: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:border-emerald-400 focus:outline-none"
+                />
+              </div>
+
+              {/* Timezone Selector */}
+              <div className="px-4 py-4 border-b border-gray-50">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
+                <select
+                  value={notificationPreferences.timezone}
+                  onChange={(e) => setNotificationPreferences(prev => ({ ...prev, timezone: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:border-emerald-400 focus:outline-none"
+                >
+                  {timezones.map(tz => (
+                    <option key={tz} value={tz}>{tz}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Save Button */}
+              <div className="px-4 py-4">
+                <button
+                  onClick={handleSaveNotificationPreferences}
+                  disabled={savingPreferences}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl py-3 transition-colors disabled:opacity-50 shadow-sm"
+                >
+                  {savingPreferences ? 'Saving...' : 'Save Preferences'}
+                </button>
+              </div>
+            </>
           )}
         </div>
 
