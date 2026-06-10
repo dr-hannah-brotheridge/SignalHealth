@@ -106,7 +106,11 @@ CRITICAL FORMATTING RULES:
 1. Do NOT write a title like "**GP SUMMARY**" at the top. Jump straight into the "Patient Overview:" section.
 2. Do NOT use any asterisks (**), dashes (---), or symbols. 
 3. Separate each section with exactly one blank line.
-4. End with a brief one-sentence factual disclaimer in plain text.
+4. For numbered lists (1., 2., 3.) or hyphenated lists (-), add a blank line after each item for better readability.
+5. End with a brief one-sentence factual disclaimer in plain text.
+
+SECTION-SPECIFIC RULES:
+Relevant Medical History: ONLY include DIAGNOSED MEDICAL CONDITIONS (e.g., migraines, diabetes, asthma, hypertension) and RESOLVED ISSUES (e.g., "migraines resolved 3 months ago"). Do NOT include current symptoms (e.g., headache today, chest pain, blurred vision). Current symptoms go in "Current Concerns" section.
 `
         }
       ]

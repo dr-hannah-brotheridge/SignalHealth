@@ -19,11 +19,13 @@ async function extractProfile(messages) {
       messages: [
         {
           role: 'user',
-          content: `Based on this conversation, extract any confirmed profile information and return ONLY a JSON object with these exact fields. Only include information the user has explicitly stated. Use null for anything not mentioned. Do not invent or infer anything.
+        content: `Based on this conversation, extract any confirmed profile information and return ONLY a JSON object with these exact fields. Only include information the user has explicitly stated. Use null for anything not mentioned. Do not invent or infer anything.
 
 Fields: name, age, gender, ethnicity, medications, known_health_problems, family_history, allergies, alcohol_and_smoking, surgeries, health_summary, health_story
 
-For health_summary: write a succinct clinical summary using natural flowing sentences. For example: "Hannah is a 28-year-old NZ European female with a known history of migraines, currently managed with lamotrigine. She also has a family history of heart disease." Only use confirmed onboarding details. Do not use markdown, asterisks, or dashes. If there isn't enough information yet, use null.
+IMPORTANT: known_health_problems should ONLY include DIAGNOSED MEDICAL CONDITIONS (e.g., "migraines", "diabetes", "asthma", "hypertension") and RESOLVED ISSUES (e.g., "migraines resolved 3 months ago", "chest pain resolved after treatment"). Do NOT include current symptoms (e.g., "headache today", "chest pain", "blurred vision"). Current symptoms go in the health story narrative, not in known health problems.
+
+For health_summary: write a succinct clinical summary using natural flowing sentences. For example: "Hannah is a 28-year-old NZ European female with a known history of migraines, currently taking with lamotrigine. She also has a family history of heart disease." Only use confirmed onboarding details. Do not use markdown, asterisks, or dashes. If there isn't enough information yet, use null.
 
 For health_story: write a succinct but comprehensive narrative summary covering everything discussed including symptoms, concerns, patterns, triggers, and any other health details mentioned in conversation. Update and replace this each time with the most complete picture. If there isn't enough information yet, use null.
 
@@ -121,8 +123,8 @@ export async function POST(request) {
         .insert({ user_id: userId, messages: updatedMessages })
     }
 
-    // Extract and save profile data every 2 messages
-    if (updatedMessages.length > 2 && updatedMessages.length % 2 === 0) {
+    // Extract and save profile data every message after the first 2
+    if (updatedMessages.length > 2) {
       console.log('📊 Profile update condition met at message', updatedMessages.length)
       const profile = await extractProfile(updatedMessages)
       if (profile) {
