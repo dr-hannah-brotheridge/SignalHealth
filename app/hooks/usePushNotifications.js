@@ -95,20 +95,22 @@
         console.log('✅ User authenticated:', user.id)
 
         console.log('💾 Checking if subscription already exists in database...')
+        const subscriptionData = subscription.toJSON()
+        const endpoint = subscriptionData.endpoint
+        
         const { data: existingSubs } = await supabase
           .from('push_subscriptions')
           .select('id')
           .eq('user_id', user.id)
+          .eq('endpoint', endpoint)
 
         if (existingSubs && existingSubs.length > 0) {
           console.log('ℹ️ Subscription already exists in database, updating...')
-          const subscriptionData = subscription.toJSON()
           
           const { error: updateError } = await supabase
             .from('push_subscriptions')
             .update({ subscription: subscriptionData })
-            .eq('user_id', user.id)
-            .limit(1)
+            .eq('id', existingSubs[0].id)
 
           if (updateError) {
             console.error('❌ Update error:', updateError)
@@ -120,7 +122,6 @@
         }
 
         console.log('💾 Saving new subscription to database...')
-        const subscriptionData = subscription.toJSON()
         console.log('📦 Subscription data:', {
           endpoint: subscriptionData.endpoint,
           keys: subscriptionData.keys ? 'present' : 'missing'
