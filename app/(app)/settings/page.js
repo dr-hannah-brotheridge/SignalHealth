@@ -521,7 +521,6 @@ We reserve the right to modify these terms at any time. Continued use of the app
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
                   <option value="monthly">Monthly</option>
-                  <option value="disabled">Disabled</option>
                 </select>
               </div>
 

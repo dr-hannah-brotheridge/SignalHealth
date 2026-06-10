@@ -14,6 +14,7 @@ export default function ChatPage() {
   
   const { subscribeToPush, unsubscribeFromPush } = usePushNotifications()
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+  const [notificationPreferences, setNotificationPreferences] = useState(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -86,6 +87,29 @@ export default function ChatPage() {
       }
     }
     checkNotificationStatus()
+  }, [user])
+
+  useEffect(() => {
+    const loadNotificationPreferences = async () => {
+      if (user) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          const res = await fetch('/api/notification-preferences', {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          })
+          const data = await res.json()
+          
+          if (data.preferences) {
+            setNotificationPreferences(data.preferences)
+          }
+        } catch (error) {
+          console.error('Error loading notification preferences:', error)
+        }
+      }
+    }
+    loadNotificationPreferences()
   }, [user])
 
   const loadConversation = async (userId) => {
@@ -172,6 +196,20 @@ export default function ChatPage() {
                 const result = await unsubscribeFromPush()
                 if (result.success) {
                   setNotificationsEnabled(false)
+                  // Update notification_preferences
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession()
+                    await fetch('/api/notification-preferences', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                      },
+                      body: JSON.stringify({ ...notificationPreferences, enabled: false })
+                    })
+                  } catch (error) {
+                    console.error('Error updating notification preferences:', error)
+                  }
                   alert(result.message || "Notifications disabled!")
                 } else {
                   alert(result.error || "Failed to disable notifications")
@@ -187,6 +225,20 @@ export default function ChatPage() {
                 const result = await subscribeToPush()
                 if (result.success) {
                   setNotificationsEnabled(true)
+                  // Update notification_preferences
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession()
+                    await fetch('/api/notification-preferences', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`
+                      },
+                      body: JSON.stringify({ ...notificationPreferences, enabled: true })
+                    })
+                  } catch (error) {
+                    console.error('Error updating notification preferences:', error)
+                  }
                   alert(result.message || "Notifications enabled!")
                 } else {
                   alert(result.error || "Failed to enable notifications")
