@@ -467,10 +467,7 @@ We reserve the right to modify these terms at any time. Continued use of the app
                     
                     console.log('🔄 Toggle clicked:', { oldEnabled, newEnabled })
                     
-                    // Update state optimistically
-                    setNotificationPreferences(prev => ({ ...prev, enabled: newEnabled }))
-                    
-                    // Auto-save immediately
+                    // Auto-save immediately (don't update state yet)
                     setMessage('')
                     setIsError(false)
                     try {
@@ -489,6 +486,8 @@ We reserve the right to modify these terms at any time. Continued use of the app
                       console.log('📥 API response:', data)
                       
                       if (data.success) {
+                        // Now update state after successful save
+                        setNotificationPreferences(prev => ({ ...prev, enabled: newEnabled }))
                         setMessage(newEnabled ? 'Notifications enabled!' : 'Notifications disabled!')
                         // Reload preferences to ensure sync with database
                         await loadNotificationPreferences(user.id)
@@ -496,15 +495,11 @@ We reserve the right to modify these terms at any time. Continued use of the app
                         setIsError(true)
                         setMessage(data.error || 'Failed to update')
                         console.error('❌ API error:', data.error)
-                        // Revert on error
-                        setNotificationPreferences(prev => ({ ...prev, enabled: oldEnabled }))
                       }
                     } catch (error) {
                       setIsError(true)
                       setMessage('Failed to update')
                       console.error('❌ Error updating notification preferences:', error)
-                      // Revert on error
-                      setNotificationPreferences(prev => ({ ...prev, enabled: oldEnabled }))
                     }
                   }}
                   className="sr-only"

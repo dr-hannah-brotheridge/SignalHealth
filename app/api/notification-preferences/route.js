@@ -104,8 +104,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    console.log('📥 POST /api/notification-preferences called')
+    
     const authHeader = request.headers.get('authorization')
     if (!authHeader) {
+      console.error('❌ No auth header')
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -114,11 +117,16 @@ export async function POST(request) {
     )
 
     if (authError || !user) {
+      console.error('❌ Auth error:', authError)
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    console.log('✅ User authenticated:', user.id)
+
     const body = await request.json()
     const { enabled, frequency, days_of_week, day_of_month, time, timezone } = body
+    
+    console.log('📝 Received data:', { enabled, frequency, days_of_week, day_of_month, time, timezone })
 
     // Calculate next check-in
     const nextCheckInAt = calculateNextCheckIn({
@@ -129,17 +137,27 @@ export async function POST(request) {
       time,
       timezone
     })
+    
+    console.log('📅 Next check-in calculated:', nextCheckInAt)
 
     // Check if preferences already exist
-    const { data: existingPrefs } = await supabase
+    const { data: existingPrefs, error: queryError } = await supabase
       .from('notification_preferences')
       .select('id')
       .eq('user_id', user.id)
       .single()
 
+    if (queryError && queryError.code !== 'PGRST116') {
+      console.error('❌ Query error:', queryError)
+      return Response.json({ error: queryError.message }, { status: 500 })
+    }
+
+    console.log('🔍 Existing preferences:', existingPrefs ? 'Found (ID: ' + existingPrefs.id + ')' : 'Not found')
+
     let preferences, error
 
     if (existingPrefs) {
+      console.log('🔄 Updating existing record...')
       // Update existing record
       const result = await supabase
         .from('notification_preferences')
@@ -159,7 +177,14 @@ export async function POST(request) {
       
       preferences = result.data
       error = result.error
+      
+      if (error) {
+        console.error('❌ Update error:', error)
+      } else {
+        console.log('✅ Update successful:', preferences)
+      }
     } else {
+      console.log('➕ Inserting new record...')
       // Insert new record
       const result = await supabase
         .from('notification_preferences')
@@ -179,20 +204,27 @@ export async function POST(request) {
       
       preferences = result.data
       error = result.error
+      
+      if (error) {
+        console.error('❌ Insert error:', error)
+      } else {
+        console.log('✅ Insert successful:', preferences)
+      }
     }
 
     if (error) {
-      console.error('Error saving notification preferences:', error)
+      console.error('❌ Error saving notification preferences:', error)
       return Response.json({ error: error.message }, { status: 500 })
     }
 
+    console.log('✅ Returning success response')
     return Response.json({ 
       success: true, 
       preferences,
       message: 'Notification preferences saved successfully'
     })
   } catch (error) {
-    console.error('Error saving notification preferences:', error)
+    console.error('❌ Error saving notification preferences:', error)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

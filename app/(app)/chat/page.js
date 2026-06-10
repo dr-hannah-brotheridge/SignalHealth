@@ -101,6 +101,8 @@ export default function ChatPage() {
           })
           const data = await res.json()
           
+          console.log('📥 Chat page loaded preferences:', data.preferences)
+          
           if (data.preferences) {
             setNotificationPreferences(data.preferences)
           }
