@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
 import { usePushNotifications } from '../../hooks/usePushNotifications'
+import SocialProofBanner from '../components/SocialProofBanner'
 
 export default function ChatPage() {
   const [messages, setMessages] = useState([])
@@ -264,6 +265,20 @@ export default function ChatPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 max-w-2xl mx-auto w-full">
+        {/* Social Proof Banner - shown at top of chat */}
+        {messages.length === 0 && (
+          <div className="mb-4">
+            <SocialProofBanner />
+          </div>
+        )}
+        
+        {/* Compact banner shown after first interaction */}
+        {messages.length > 0 && messages.length < 5 && (
+          <div className="mb-4">
+            <SocialProofBanner variant="compact" />
+          </div>
+        )}
+        
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`rounded-2xl px-4 py-3 max-w-xs lg:max-w-md text-base leading-relaxed ${

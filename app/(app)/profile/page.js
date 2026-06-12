@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
+import SocialProofBanner from '../components/SocialProofBanner'
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
@@ -94,6 +95,9 @@ export default function ProfilePage() {
       </div>
 
       <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full">
+
+        {/* Social Proof Banner */}
+        <SocialProofBanner />
 
         {/* Helpful Tip Banner for changing profile data */}
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start space-x-3 shadow-sm">
