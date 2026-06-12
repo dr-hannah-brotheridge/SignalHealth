@@ -105,6 +105,9 @@ export default function ChatPage() {
           
           if (data.preferences) {
             setNotificationPreferences(data.preferences)
+            // Sync button state with database enabled field
+            setNotificationsEnabled(data.preferences.enabled)
+            console.log('🔄 Button state synced with database:', data.preferences.enabled)
           }
         } catch (error) {
           console.error('Error loading notification preferences:', error)
