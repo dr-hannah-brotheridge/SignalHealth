@@ -162,76 +162,31 @@ export async function POST(request) {
     
     console.log('📅 Next check-in calculated:', nextCheckInAt)
 
-    // Check if preferences already exist
-    const { data: existingPrefs, error: queryError } = await supabase
+    // Use native upsert to prevent race conditions and duplicates
+    console.log('💾 Upserting notification preferences...')
+    const { data: preferences, error } = await supabase
       .from('notification_preferences')
-      .select('id')
-      .eq('user_id', user.id)
+      .upsert({
+        user_id: user.id,
+        enabled: enabled !== undefined ? enabled : true,
+        frequency: frequency || 'daily',
+        days_of_week: days_of_week || [],
+        day_of_month: day_of_month || 1,
+        time: time || '09:00',
+        timezone: timezone || 'UTC',
+        next_check_in_at: nextCheckInAt,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false
+      })
+      .select()
       .single()
-
-    if (queryError && queryError.code !== 'PGRST116') {
-      console.error('❌ Query error:', queryError)
-      return Response.json({ error: queryError.message }, { status: 500 })
-    }
-
-    console.log('🔍 Existing preferences:', existingPrefs ? 'Found (ID: ' + existingPrefs.id + ')' : 'Not found')
-
-    let preferences, error
-
-    if (existingPrefs) {
-      console.log('🔄 Updating existing record...')
-      // Update existing record
-      const result = await supabase
-        .from('notification_preferences')
-        .update({
-          enabled: enabled !== undefined ? enabled : true,
-          frequency: frequency || 'daily',
-          days_of_week: days_of_week || [],
-          day_of_month: day_of_month || 1,
-          time: time || '09:00',
-          timezone: timezone || 'UTC',
-          next_check_in_at: nextCheckInAt,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingPrefs.id)
-        .select()
-        .single()
-      
-      preferences = result.data
-      error = result.error
-      
-      if (error) {
-        console.error('❌ Update error:', error)
-      } else {
-        console.log('✅ Update successful:', preferences)
-      }
+    
+    if (error) {
+      console.error('❌ Upsert error:', error)
     } else {
-      console.log('➕ Inserting new record...')
-      // Insert new record
-      const result = await supabase
-        .from('notification_preferences')
-        .insert({
-          user_id: user.id,
-          enabled: enabled !== undefined ? enabled : true,
-          frequency: frequency || 'daily',
-          days_of_week: days_of_week || [],
-          day_of_month: day_of_month || 1,
-          time: time || '09:00',
-          timezone: timezone || 'UTC',
-          next_check_in_at: nextCheckInAt,
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single()
-      
-      preferences = result.data
-      error = result.error
-      
-      if (error) {
-        console.error('❌ Insert error:', error)
-      } else {
-        console.log('✅ Insert successful:', preferences)
-      }
+      console.log('✅ Upsert successful:', preferences)
     }
 
     if (error) {

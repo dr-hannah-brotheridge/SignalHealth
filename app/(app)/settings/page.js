@@ -68,6 +68,9 @@ export default function SettingsPage() {
     'Pacific/Honolulu'
   ]
 
+  // Track if preferences have been loaded from database
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false)
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session }, error } = await supabase.auth.getSession()
@@ -78,25 +81,27 @@ export default function SettingsPage() {
       }
 
       setUser(session.user)
-      loadNotificationPreferences(session.user.id)
+      await loadNotificationPreferences(session.user.id)
+      setPreferencesLoaded(true)
     }
     
     checkAuth()
   }, [])
 
-  // Auto-detect user's timezone on component mount
+  // Auto-detect user's timezone ONLY after preferences are loaded and if still UTC
   useEffect(() => {
-    const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    console.log('🌍 Detected timezone:', detectedTimezone)
-    
-    // Only set if the current timezone is the default UTC
-    if (notificationPreferences.timezone === 'UTC' && detectedTimezone) {
-      setNotificationPreferences(prev => ({
-        ...prev,
-        timezone: detectedTimezone
-      }))
+    if (preferencesLoaded && notificationPreferences.timezone === 'UTC') {
+      const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      console.log('🌍 Auto-detected timezone:', detectedTimezone)
+      
+      if (detectedTimezone && detectedTimezone !== 'UTC') {
+        setNotificationPreferences(prev => ({
+          ...prev,
+          timezone: detectedTimezone
+        }))
+      }
     }
-  }, [])
+  }, [preferencesLoaded])
 
   const loadNotificationPreferences = async (userId) => {
     try {
@@ -480,73 +485,12 @@ We reserve the right to modify these terms at any time. Continued use of the app
         {/* Notification Preferences Card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/30">
-            <h2 className="text-base font-semibold text-gray-800">Notification Preferences</h2>
+            <h2 className="text-base font-semibold text-gray-800">Notification Schedule</h2>
+            <p className="text-xs text-gray-500 mt-1">Configure when you'd like to receive check-in reminders</p>
           </div>
           
-          {/* Enable/Disable Toggle */}
-          <div className="px-4 py-4 border-b border-gray-50">
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-base text-gray-700">Enable Notifications</span>
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={notificationPreferences.enabled}
-                  onChange={async (e) => {
-                    const newEnabled = e.target.checked
-                    const oldEnabled = notificationPreferences.enabled
-                    
-                    console.log('🔄 Toggle clicked:', { oldEnabled, newEnabled })
-                    
-                    // Auto-save immediately (don't update state yet)
-                    setMessage('')
-                    setIsError(false)
-                    try {
-                      const { data: { session } } = await supabase.auth.getSession()
-                      console.log('📤 Sending to API:', { ...notificationPreferences, enabled: newEnabled })
-                      
-                      const res = await fetch('/api/notification-preferences', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${session.access_token}`
-                        },
-                        body: JSON.stringify({ ...notificationPreferences, enabled: newEnabled })
-                      })
-                      const data = await res.json()
-                      console.log('📥 API response:', data)
-                      
-                      if (data.success) {
-                        // Now update state after successful save
-                        setNotificationPreferences(prev => ({ ...prev, enabled: newEnabled }))
-                        setMessage(newEnabled ? 'Notifications enabled!' : 'Notifications disabled!')
-                        // Reload preferences to ensure sync with database
-                        await loadNotificationPreferences(user.id)
-                      } else {
-                        setIsError(true)
-                        setMessage(data.error || 'Failed to update')
-                        console.error('❌ API error:', data.error)
-                      }
-                    } catch (error) {
-                      setIsError(true)
-                      setMessage('Failed to update')
-                      console.error('❌ Error updating notification preferences:', error)
-                    }
-                  }}
-                  className="sr-only"
-                />
-                <div className={`w-14 h-8 rounded-full transition-colors ${
-                  notificationPreferences.enabled ? 'bg-emerald-600' : 'bg-gray-300'
-                }`}>
-                  <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform ${
-                    notificationPreferences.enabled ? 'translate-x-6' : 'translate-x-1'
-                  } mt-1`}></div>
-                </div>
-              </div>
-            </label>
-          </div>
-
-          {notificationPreferences.enabled && (
-            <>
+          {/* Scheduling Inputs - Always Visible */}
+          <>
               {/* Frequency Selector */}
               <div className="px-4 py-4 border-b border-gray-50">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
@@ -632,11 +576,10 @@ We reserve the right to modify these terms at any time. Continued use of the app
                   disabled={savingPreferences}
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl py-3 transition-colors disabled:opacity-50 shadow-sm"
                 >
-                  {savingPreferences ? 'Saving...' : 'Save Preferences'}
+                  {savingPreferences ? 'Saving...' : 'Save Schedule'}
                 </button>
               </div>
-            </>
-          )}
+          </>
         </div>
 
         {/* Global Operational Message Box */}
