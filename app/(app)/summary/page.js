@@ -8,6 +8,7 @@ export default function SummaryPage() {
   const [loading, setLoading] = useState(false)
   const [generated, setGenerated] = useState(false)
   const [user, setUser] = useState(null)
+  const [shareMessage, setShareMessage] = useState('')
 
   useEffect(() => {
     const getProfile = async () => {
@@ -46,6 +47,48 @@ export default function SummaryPage() {
     setSummary(data.summary)
     setGenerated(true)
     setLoading(false)
+  }
+
+  const handleShare = async () => {
+    // Privacy confirmation
+    const confirmed = window.confirm(
+      '⚠️ You are about to share your health summary.\n\nThis contains sensitive medical information.\n\nOnly share with your healthcare provider or trusted individuals.\n\nContinue?'
+    )
+    
+    if (!confirmed) return
+
+    // Try Web Share API first (mobile devices)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'SignalHealth GP Summary',
+          text: summary,
+        })
+        setShareMessage('✅ Shared successfully!')
+        setTimeout(() => setShareMessage(''), 3000)
+      } catch (err) {
+        // User cancelled or error occurred
+        if (err.name !== 'AbortError') {
+          console.error('Share failed:', err)
+          // Fallback to clipboard
+          handleCopyToClipboard()
+        }
+      }
+    } else {
+      // Fallback for desktop: Copy to clipboard
+      handleCopyToClipboard()
+    }
+  }
+
+  const handleCopyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(summary)
+      setShareMessage('✅ Summary copied to clipboard!')
+      setTimeout(() => setShareMessage(''), 3000)
+    } catch (err) {
+      setShareMessage('❌ Failed to copy. Please try again.')
+      setTimeout(() => setShareMessage(''), 3000)
+    }
   }
 
   return (
@@ -95,20 +138,48 @@ export default function SummaryPage() {
               {summary}
             </div>
             
+            {/* Privacy Warning */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+              <p className="text-xs text-amber-800 leading-relaxed">
+                ⚠️ <strong>Privacy Notice:</strong> This summary contains personal health information. Only share with your healthcare provider or trusted individuals.
+              </p>
+            </div>
+
+            {/* Share Message Feedback */}
+            {shareMessage && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                <p className="text-sm text-emerald-800 text-center font-medium">
+                  {shareMessage}
+                </p>
+              </div>
+            )}
+            
             <div className="space-y-2 pt-2">
+              {/* Primary Share Button */}
               <button
-                onClick={() => { navigator.clipboard.writeText(summary); alert('Copied to clipboard!') }}
-                className="w-full border border-emerald-500 text-emerald-600 rounded-2xl py-3 text-base font-medium hover:bg-emerald-50 transition-colors shadow-sm"
+                onClick={handleShare}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl py-3 text-base font-semibold transition-colors shadow-sm flex items-center justify-center gap-2"
               >
-                Copy to clipboard
+                <span>📤</span>
+                Share Summary
               </button>
-              <button
-                onClick={generateSummary}
-                disabled={loading}
-                className="w-full border border-gray-200 text-gray-500 rounded-2xl py-3 text-base font-medium hover:bg-gray-50 transition-colors"
-              >
-                {loading ? 'Regenerating...' : 'Update Summary'}
-              </button>
+
+              {/* Secondary Actions */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleCopyToClipboard}
+                  className="border border-emerald-500 text-emerald-600 rounded-2xl py-3 text-sm font-medium hover:bg-emerald-50 transition-colors"
+                >
+                  📋 Copy
+                </button>
+                <button
+                  onClick={generateSummary}
+                  disabled={loading}
+                  className="border border-gray-200 text-gray-500 rounded-2xl py-3 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  {loading ? '⏳ Updating...' : '🔄 Update'}
+                </button>
+              </div>
             </div>
           </div>
         )}
