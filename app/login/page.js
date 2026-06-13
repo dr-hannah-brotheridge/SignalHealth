@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [message, setMessage] = useState('')
   const [isError, setIsError] = useState(false)
 
+  // Check URL parameters only once on mount
   useEffect(() => {
     // 1. Check for recovery tokens in the URL immediately on mount
     const isRecoveryInUrl = 
@@ -20,14 +21,21 @@ export default function LoginPage() {
     
     if (isRecoveryInUrl) {
       setAuthMode('recovery');
+    } else {
+      // 2. Check for mode query parameter (e.g., ?mode=signup) only on initial mount
+      const urlParams = new URLSearchParams(window.location.search);
+      const modeParam = urlParams.get('mode');
+      if (modeParam === 'signup') {
+        setAuthMode('signup');
+      }
     }
+  }, []); // Empty dependency array = runs only once on mount
 
-    // 2. Check for mode query parameter (e.g., ?mode=signup)
-    const urlParams = new URLSearchParams(window.location.search);
-    const modeParam = urlParams.get('mode');
-    if (modeParam === 'signup' && !isRecoveryInUrl) {
-      setAuthMode('signup');
-    }
+  // Handle session checking and auth state changes
+  useEffect(() => {
+    const isRecoveryInUrl = 
+      window.location.hash.includes('type=recovery') || 
+      window.location.search.includes('type=recovery');
 
     const checkUserSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -40,7 +48,7 @@ export default function LoginPage() {
     }
     checkUserSession()
 
-    // 2. Listen for the specific PASSWORD_RECOVERY event from Supabase
+    // Listen for the specific PASSWORD_RECOVERY event from Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setAuthMode('recovery')
