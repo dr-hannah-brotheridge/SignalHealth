@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
+import { usePushNotifications } from '../../hooks/usePushNotifications'
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
@@ -8,14 +9,15 @@ export default function SettingsPage() {
   const [isError, setIsError] = useState(false)
   const [user, setUser] = useState(null)
   const [notificationPreferences, setNotificationPreferences] = useState({
-    enabled: true,
-    frequency: 'daily',
-    days_of_week: [],
+    enabled: false,
+    frequency: 'weekly',
+    days_of_week: [1],
     day_of_month: 1,
     time: '09:00',
     timezone: 'UTC'
   })
   const [savingPreferences, setSavingPreferences] = useState(false)
+  const { subscribeToPush, unsubscribeFromPush } = usePushNotifications()
   
   // Controls the legal text pop-up modals
   const [activeModal, setActiveModal] = useState(null)
@@ -121,7 +123,67 @@ export default function SettingsPage() {
     }
   }
 
+  const handleToggleNotifications = async (newEnabledState) => {
+    setSavingPreferences(true)
+    setMessage('')
+    setIsError(false)
+
+    try {
+      if (newEnabledState) {
+        // Enabling - subscribe to push
+        const result = await subscribeToPush()
+        if (!result.success) {
+          setIsError(true)
+          setMessage(result.error || 'Failed to enable notifications')
+          setSavingPreferences(false)
+          return
+        }
+      } else {
+        // Disabling - unsubscribe from push
+        const result = await unsubscribeFromPush()
+        if (!result.success) {
+          setIsError(true)
+          setMessage(result.error || 'Failed to disable notifications')
+          setSavingPreferences(false)
+          return
+        }
+      }
+
+      // Update preferences in database
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/notification-preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ ...notificationPreferences, enabled: newEnabledState })
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        setNotificationPreferences(prev => ({ ...prev, enabled: newEnabledState }))
+        setMessage(newEnabledState ? 'Notifications enabled successfully!' : 'Notifications disabled successfully!')
+      } else {
+        setIsError(true)
+        setMessage(data.error || 'Failed to update preferences')
+      }
+    } catch (error) {
+      setIsError(true)
+      setMessage('Failed to update preferences')
+    } finally {
+      setSavingPreferences(false)
+    }
+  }
+
   const handleSaveNotificationPreferences = async () => {
+    if (!notificationPreferences.enabled) {
+      setIsError(true)
+      setMessage('Please enable check-in reminders first')
+      return
+    }
+
     setSavingPreferences(true)
     setMessage('')
     setIsError(false)
@@ -140,7 +202,7 @@ export default function SettingsPage() {
       const data = await res.json()
       
       if (data.success) {
-        setMessage('Notification preferences saved successfully!')
+        setMessage('Notification schedule saved successfully!')
       } else {
         setIsError(true)
         setMessage(data.error || 'Failed to save preferences')
@@ -485,12 +547,38 @@ We reserve the right to modify these terms at any time. Continued use of the app
         {/* Notification Preferences Card */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/30">
-            <h2 className="text-base font-semibold text-gray-800">Notification Schedule</h2>
-            <p className="text-xs text-gray-500 mt-1">Configure when you'd like to receive check-in reminders</p>
+            <h2 className="text-base font-semibold text-gray-800">Check-in Reminders</h2>
+            <p className="text-xs text-gray-500 mt-1">Get regular prompts to update your health profile</p>
           </div>
           
-          {/* Scheduling Inputs - Always Visible */}
-          <>
+          {/* Enable/Disable Toggle */}
+          <div className="px-4 py-4 border-b border-gray-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Check-in reminders</label>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {notificationPreferences.enabled ? 'Enabled' : 'Disabled'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleToggleNotifications(!notificationPreferences.enabled)}
+                disabled={savingPreferences}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors disabled:opacity-50 ${
+                  notificationPreferences.enabled ? 'bg-teal-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                    notificationPreferences.enabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+          
+          {/* Scheduling Inputs - Only Visible When Enabled */}
+          {notificationPreferences.enabled && (
+            <>
               {/* Frequency Selector */}
               <div className="px-4 py-4 border-b border-gray-50">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
@@ -573,13 +661,14 @@ We reserve the right to modify these terms at any time. Continued use of the app
               <div className="px-4 py-4">
                 <button
                   onClick={handleSaveNotificationPreferences}
-                  disabled={savingPreferences}
+                  disabled={savingPreferences || !notificationPreferences.enabled}
                   className="w-full bg-teal-700 hover:bg-teal-800 text-white font-semibold text-sm rounded-xl py-3 transition-colors disabled:opacity-50 shadow-sm"
                 >
                   {savingPreferences ? 'Saving...' : 'Save Schedule'}
                 </button>
               </div>
-          </>
+            </>
+          )}
         </div>
 
         {/* Global Operational Message Box */}

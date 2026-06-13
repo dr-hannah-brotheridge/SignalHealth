@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../lib/supabase'
-import { usePushNotifications } from '../../hooks/usePushNotifications'
 import SocialProofBanner from '../components/SocialProofBanner'
+import CheckInOnboardingModal from '../components/CheckInOnboardingModal'
 
 export default function ChatPage() {
   const [messages, setMessages] = useState([])
@@ -10,12 +10,8 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState(null)
   const [isRedirecting, setIsRedirecting] = useState(false)
-  const [notificationMessage, setNotificationMessage] = useState(null)
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false)
   const bottomRef = useRef(null)
-  
-  const { subscribeToPush, unsubscribeFromPush } = usePushNotifications()
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
-  const [notificationPreferences, setNotificationPreferences] = useState(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -51,72 +47,6 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  useEffect(() => {
-    const checkNotificationStatus = async () => {
-      if (typeof window !== 'undefined' && 'serviceWorker' in navigator && user) {
-        try {
-          const registration = await navigator.serviceWorker.ready
-          const subscription = await registration.pushManager.getSubscription()
-          
-          if (subscription) {
-            // Check if subscription exists in database
-            const subscriptionData = subscription.toJSON()
-            const { data: existingSubs } = await supabase
-              .from('push_subscriptions')
-              .select('id, subscription')
-              .eq('user_id', user.id)
-            
-            const matchingSub = existingSubs?.find(sub => sub.subscription?.endpoint === subscriptionData.endpoint)
-            
-            if (matchingSub) {
-              // Subscription exists in both browser and database
-              setNotificationsEnabled(true)
-            } else {
-              // Browser has subscription but database doesn't - clean up
-              console.log('🧹 Cleaning up orphaned browser subscription...')
-              await subscription.unsubscribe()
-              setNotificationsEnabled(false)
-            }
-          } else {
-            // No browser subscription
-            setNotificationsEnabled(false)
-          }
-        } catch (err) {
-          console.error('Error checking notification status:', err)
-          setNotificationsEnabled(false)
-        }
-      }
-    }
-    checkNotificationStatus()
-  }, [user])
-
-  useEffect(() => {
-    const loadNotificationPreferences = async () => {
-      if (user) {
-        try {
-          const { data: { session } } = await supabase.auth.getSession()
-          const res = await fetch('/api/notification-preferences', {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`
-            }
-          })
-          const data = await res.json()
-          
-          console.log('📥 Chat page loaded preferences:', data.preferences)
-          
-          if (data.preferences) {
-            setNotificationPreferences(data.preferences)
-            // Sync button state with database enabled field
-            setNotificationsEnabled(data.preferences.enabled)
-            console.log('🔄 Button state synced with database:', data.preferences.enabled)
-          }
-        } catch (error) {
-          console.error('Error loading notification preferences:', error)
-        }
-      }
-    }
-    loadNotificationPreferences()
-  }, [user])
 
   const loadConversation = async (userId) => {
     const { data } = await supabase
@@ -170,6 +100,17 @@ export default function ChatPage() {
     const assistantMessage = { role: 'assistant', content: data.reply }
     setMessages([...updatedMessages, assistantMessage])
     setLoading(false)
+    
+    // Check if we should show onboarding modal
+    if (data.showOnboardingModal) {
+      // Only show if not already dismissed or accepted
+      const dismissed = localStorage.getItem('checkinModalDismissed') === 'true'
+      const accepted = localStorage.getItem('checkinModalAccepted') === 'true'
+      
+      if (!dismissed && !accepted) {
+        setShowOnboardingModal(true)
+      }
+    }
   }
 
   const handleLogout = async () => {
@@ -196,65 +137,6 @@ export default function ChatPage() {
         </div>
         
         <div className="flex items-center gap-2">
-          {notificationsEnabled ? (
-            <button
-              onClick={async () => {
-                const result = await unsubscribeFromPush()
-                if (result.success) {
-                  setNotificationsEnabled(false)
-                  // Update notification_preferences
-                  try {
-                    const { data: { session } } = await supabase.auth.getSession()
-                    await fetch('/api/notification-preferences', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                      },
-                      body: JSON.stringify({ ...notificationPreferences, enabled: false })
-                    })
-                  } catch (error) {
-                    console.error('Error updating notification preferences:', error)
-                  }
-                  alert(result.message || "Notifications disabled!")
-                } else {
-                  alert(result.error || "Failed to disable notifications")
-                }
-              }}
-              className="text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-xl transition-colors"
-            >
-              Disable Alerts
-            </button>
-          ) : (
-            <button
-              onClick={async () => {
-                const result = await subscribeToPush()
-                if (result.success) {
-                  setNotificationsEnabled(true)
-                  // Update notification_preferences
-                  try {
-                    const { data: { session } } = await supabase.auth.getSession()
-                    await fetch('/api/notification-preferences', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`
-                      },
-                      body: JSON.stringify({ ...notificationPreferences, enabled: true })
-                    })
-                  } catch (error) {
-                    console.error('Error updating notification preferences:', error)
-                  }
-                  alert(result.message || "Notifications enabled!")
-                } else {
-                  alert(result.error || "Failed to enable notifications")
-                }
-              }}
-              className="text-xs font-medium text-teal-700 bg-teal-100 hover:bg-teal-200 px-3 py-1.5 rounded-xl transition-colors"
-            >
-              Enable Alerts
-            </button>
-          )}
           <button
             onClick={handleLogout}
             className="text-sm font-medium text-gray-500 hover:text-red-500 bg-white/60 hover:bg-white border border-gray-100 px-3 py-1.5 rounded-xl transition-colors shadow-sm"
@@ -326,6 +208,11 @@ export default function ChatPage() {
         </div>
         <p className="text-center text-xs text-gray-400 mt-2">SignalHealth does not diagnose conditions or replace medical care.</p>
       </div>
+
+      {/* Onboarding Modal */}
+      {showOnboardingModal && (
+        <CheckInOnboardingModal onClose={() => setShowOnboardingModal(false)} />
+      )}
     </div>
   )
 }

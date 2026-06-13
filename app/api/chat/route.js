@@ -137,6 +137,9 @@ IMPORTANT: Use this profile information to maintain continuity. Do NOT ask about
     const updatedMessages = messages.length === 0
       ? [{ role: 'assistant', content: reply }]
       : [...messages, { role: 'assistant', content: reply }]
+    
+    // Track if we should show onboarding modal
+    let showOnboardingModal = false
 
     // Save conversation
     const { data: existing } = await supabase
@@ -174,6 +177,14 @@ IMPORTANT: Use this profile information to maintain continuity. Do NOT ask about
       const profile = await extractProfile(currentProfile || {}, recentMessages)
       if (profile) {
         console.log('📝 Profile data extracted, building updates object...')
+        
+        // Count how many core fields were filled BEFORE this update
+        const coreFields = ['name', 'age', 'gender', 'ethnicity', 'medications']
+        const filledBefore = coreFields.filter(field => {
+          const val = currentProfile?.[field]
+          return val && val !== '' && val !== '[]' && val !== '{}'
+        }).length
+        
         const updates = {}
         if (profile.name) updates.name = profile.name
         if (profile.age) updates.age = profile.age
@@ -203,6 +214,18 @@ IMPORTANT: Use this profile information to maintain continuity. Do NOT ask about
               console.log('❌ Database update error:', error)
             } else {
               console.log('✅ Database update successful')
+              
+              // Check if this is first meaningful profile update (onboarding complete)
+              // Trigger modal if: profile had < 3 core fields before, now has >= 3
+              const filledAfter = coreFields.filter(field => {
+                const val = updates[field] || currentProfile?.[field]
+                return val && val !== '' && val !== '[]' && val !== '{}'
+              }).length
+              
+              if (filledBefore < 3 && filledAfter >= 3) {
+                console.log('🎉 First meaningful profile update detected! Trigger onboarding modal.')
+                showOnboardingModal = true
+              }
             }
           } catch (dbError) {
             console.log('❌ Database update exception:', dbError)
@@ -217,7 +240,7 @@ IMPORTANT: Use this profile information to maintain continuity. Do NOT ask about
       console.log('⏭️ Profile update not triggered (message count:', updatedMessages.length, ')')
     }
 
-    return Response.json({ reply })
+    return Response.json({ reply, showOnboardingModal })
   } catch (err) {
     console.log('API error:', err)
     return Response.json({ error: err.message }, { status: 500 })

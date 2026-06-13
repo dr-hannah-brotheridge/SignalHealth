@@ -8,6 +8,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [completion, setCompletion] = useState({ percentage: 0, completed: 0, total: 10 })
+  const [showCheckInPrompt, setShowCheckInPrompt] = useState(false)
 
   useEffect(() => {
     const getProfile = async () => {
@@ -27,6 +28,30 @@ export default function ProfilePage() {
       if (data) {
         const completionData = calculateProfileCompletion(data)
         setCompletion(completionData)
+      }
+      
+      // Check if should show check-in prompt
+      const modalDismissed = localStorage.getItem('checkinModalDismissed') === 'true'
+      const modalAccepted = localStorage.getItem('checkinModalAccepted') === 'true'
+      
+      // Only show if modal was dismissed (not accepted) and notifications aren't enabled
+      if (modalDismissed && !modalAccepted) {
+        // Check if notifications are enabled
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          const res = await fetch('/api/notification-preferences', {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          })
+          const prefData = await res.json()
+          
+          if (!prefData.preferences?.enabled) {
+            setShowCheckInPrompt(true)
+          }
+        } catch (error) {
+          console.error('Error checking notification status:', error)
+        }
       }
       
       setLoading(false)
@@ -107,6 +132,25 @@ export default function ProfilePage() {
 
         {/* Social Proof Banner */}
         <SocialProofBanner />
+
+        {/* Check-in Reminder Prompt */}
+        {showCheckInPrompt && (
+          <a 
+            href="/settings"
+            className="block bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-2xl p-4 hover:shadow-md transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">💡</span>
+                <div>
+                  <p className="text-sm font-semibold text-teal-900">Set up check-in reminders</p>
+                  <p className="text-xs text-teal-700 mt-0.5">Keep your health profile growing over time</p>
+                </div>
+              </div>
+              <span className="text-teal-600 group-hover:translate-x-1 transition-transform text-xl">→</span>
+            </div>
+          </a>
+        )}
 
         {/* Profile Completion Tracker */}
         <div className="bg-gradient-to-br from-teal-50 to-blue-50 border border-teal-200 rounded-2xl p-4 shadow-sm">

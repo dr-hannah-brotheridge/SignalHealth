@@ -107,12 +107,12 @@ export async function GET(request) {
       return Response.json({ error: error.message }, { status: 500 })
     }
 
-    // Return preferences or default values
+    // Return preferences or default values (opt-in design: enabled false by default)
     return Response.json({
       preferences: preferences || {
-        enabled: true,
-        frequency: 'daily',
-        days_of_week: [],
+        enabled: false,
+        frequency: 'weekly',
+        days_of_week: [1], // Monday
         day_of_month: 1,
         time: '09:00',
         timezone: 'UTC'
@@ -168,9 +168,9 @@ export async function POST(request) {
       .from('notification_preferences')
       .upsert({
         user_id: user.id,
-        enabled: enabled !== undefined ? enabled : true,
-        frequency: frequency || 'daily',
-        days_of_week: days_of_week || [],
+        enabled: enabled !== undefined ? enabled : false,
+        frequency: frequency || 'weekly',
+        days_of_week: days_of_week || [1],
         day_of_month: day_of_month || 1,
         time: time || '09:00',
         timezone: timezone || 'UTC',
