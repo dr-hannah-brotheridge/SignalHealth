@@ -58,31 +58,19 @@
         }
         console.log('✅ User authenticated:', user.id)
 
-        console.log('💾 Removing subscription from database...')
-        const subscriptionData = subscription.toJSON()
-        const endpoint = subscriptionData.endpoint
+        console.log('💾 Removing ALL subscriptions from database for this user...')
         
-        const { data: existingSubs } = await supabase
+        // Delete ALL push subscriptions for this user to prevent accumulation
+        const { error: deleteError } = await supabase
           .from('push_subscriptions')
-          .select('id, subscription')
+          .delete()
           .eq('user_id', user.id)
 
-        const matchingSub = existingSubs?.find(sub => sub.subscription?.endpoint === endpoint)
-
-        if (!matchingSub) {
-          console.log('ℹ️ Subscription not found in database, only unsubscribing from browser')
-        } else {
-          const { error: deleteError } = await supabase
-            .from('push_subscriptions')
-            .delete()
-            .eq('id', matchingSub.id)
-
-          if (deleteError) {
-            console.error('❌ Database error:', deleteError)
-            return { success: false, error: `Failed to remove subscription: ${deleteError.message}` }
-          }
-          console.log('✅ Subscription removed from database')
+        if (deleteError) {
+          console.error('❌ Database error:', deleteError)
+          return { success: false, error: `Failed to remove subscriptions: ${deleteError.message}` }
         }
+        console.log('✅ All subscriptions removed from database')
 
         console.log('📝 Unsubscribing from push service...')
         await subscription.unsubscribe()
@@ -203,6 +191,22 @@
         if (matchingSub) {
           console.log('✅ Subscription already exists in database (ID:', matchingSub.id, ')')
           return { success: true, message: 'Notifications already enabled!' }
+        }
+
+        // Clean up any old subscriptions before adding new one
+        if (existingSubs && existingSubs.length > 0) {
+          console.log('🧹 Cleaning up', existingSubs.length, 'old subscription(s)...')
+          const { error: deleteError } = await supabase
+            .from('push_subscriptions')
+            .delete()
+            .eq('user_id', user.id)
+          
+          if (deleteError) {
+            console.error('⚠️ Warning: Failed to clean up old subscriptions:', deleteError.message)
+            // Continue anyway - not critical
+          } else {
+            console.log('✅ Old subscriptions cleaned up')
+          }
         }
 
         console.log('💾 Saving new subscription to database...')

@@ -31,27 +31,22 @@ export default function ProfilePage() {
       }
       
       // Check if should show check-in prompt
-      const modalDismissed = localStorage.getItem('checkinModalDismissed') === 'true'
-      const modalAccepted = localStorage.getItem('checkinModalAccepted') === 'true'
-      
-      // Only show if modal was dismissed (not accepted) and notifications aren't enabled
-      if (modalDismissed && !modalAccepted) {
-        // Check if notifications are enabled
-        try {
-          const { data: { session } } = await supabase.auth.getSession()
-          const res = await fetch('/api/notification-preferences', {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`
-            }
-          })
-          const prefData = await res.json()
-          
-          if (!prefData.preferences?.enabled) {
-            setShowCheckInPrompt(true)
+      // Show prompt if notifications are disabled (regardless of modal state)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch('/api/notification-preferences', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
           }
-        } catch (error) {
-          console.error('Error checking notification status:', error)
+        })
+        const prefData = await res.json()
+        
+        // Show prompt if notifications are disabled
+        if (!prefData.preferences?.enabled) {
+          setShowCheckInPrompt(true)
         }
+      } catch (error) {
+        console.error('Error checking notification status:', error)
       }
       
       setLoading(false)
