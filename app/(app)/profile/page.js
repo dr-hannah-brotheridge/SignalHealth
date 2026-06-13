@@ -135,7 +135,7 @@ export default function ProfilePage() {
           <div className="flex items-start gap-2">
             <span className="text-base mt-0.5">💡</span>
             <p className="text-sm text-teal-800 leading-relaxed">
-              <strong>Want to complete your profile?</strong> Check what's missing below and let me know in the chat!
+              <strong>Want to complete or update your profile?</strong> Check what's missing below and let me know in the chat!
             </p>
           </div>
         </div>
